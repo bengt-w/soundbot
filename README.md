@@ -1,5 +1,5 @@
 # soundbot
-This is a small discord.py soundboard bot with HTTP-API and webinterface using flask. 
+This is a small discord.py soundboard bot with REST-API and webinterface using flask. 
 
 I got the initial code with a Tkinther interface from https://github.com/JonasB2510
 I changed it so it is using flask as an WebUI with HTTP-Basic-Auth
