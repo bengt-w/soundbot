@@ -1,0 +1,27 @@
+{
+    "emote": ":flag_de:",
+    "commands": {
+        "join": {
+            "success": "Joined <#$(1)> successfully."
+        },
+        "leave": {
+
+        }, 
+        "play": {
+
+        }, 
+        "list": {
+
+        }, 
+        "leave": {
+
+        }, 
+        "stop": {
+
+        },
+        "language": {
+            "success": "Sprache erfolgreich geändert zu $(emote).",
+            "lang_empty": "Bitte gib eine sprache an!"
+        }
+    }
+}

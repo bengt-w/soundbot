@@ -1,0 +1,27 @@
+{
+    "emote": ":flag_gb:",
+    "commands": {
+        "join": {
+            "success": "Joined <#$(1)> successfully."
+        },
+        "leave": {
+
+        }, 
+        "play": {
+
+        }, 
+        "list": {
+
+        }, 
+        "leave": {
+
+        }, 
+        "stop": {
+
+        },
+        "language": {
+            "success": "Language changed successfully to $(emote)",
+            "lang_empty": "Please specify the language you want to switch to!"
+        }
+    }
+}

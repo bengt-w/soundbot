@@ -31,7 +31,7 @@ def is_sound_registered(name):
         sounds = response.json()
         return name in sounds
     else:
-        print("Fehler beim Abrufen der Sounds:", response.json())
+        print("Failed to get sound:", response.json())
         return False
 
 # Funktion zum Hinzufügen eines Sounds
@@ -73,7 +73,7 @@ class SoundEventHandler(FileSystemEventHandler):
 
 # Hauptfunktion
 if __name__ == "__main__":
-    path = config["sounds_dir"]
+    path = config["soundboard"]["sounds_dir"]
     event_handler = SoundEventHandler()
     observer = Observer()
     observer.schedule(event_handler, path, recursive=False)

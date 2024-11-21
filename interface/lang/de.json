@@ -1,0 +1,18 @@
+{
+    "title": "Soundboard",
+    "channel_settings": "Kanaleinstellungen",
+    "guild_id": "Gilden-ID:",
+    "channel_id": "Kanal-ID:",
+    "save_settings": "Einstellungen speichern",
+    "join_channel": "Kanal beitreten",
+    "leave_channel": "Kanal verlassen",
+    "stop_sound": "Sound stoppen",
+    "upload_sound": "Sound hochladen",
+    "volume_control": "Lautstärkeregelung",
+    "bot_status": "Bot-Status",
+    "update_status": "Status aktualisieren",
+    "available_sounds": "Verfügbare Sounds",
+    "status_disconnected": "Getrennt",
+    "status_connected": "Verbunden", 
+    "status_error": "Fehler!"
+}

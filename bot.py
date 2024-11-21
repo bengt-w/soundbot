@@ -10,37 +10,36 @@ import asyncio
 import threading
 from werkzeug.security import generate_password_hash, check_password_hash
 from getpass import getpass
-import requests
+from flask_httpauth import HTTPBasicAuth
+import json
+from lang_handler import LangHandler
+import config_handler as config
 
 if not os.path.exists("./sounds"):
     os.makedirs("sounds")
 
-CONFIG_FILE = './config/config.json'
-
-def load_config():
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r') as f:
-            return json.load(f)
-    return None
-
-def save_config(config):
-    with open(CONFIG_FILE, 'w') as f:
-        json.dump(config, f, indent=4)
+CONFIG_FILE = os.path.join("config", "config.json") # if you want to change this don't forget to change it in the config_handler.py
 
 if not os.path.exists(CONFIG_FILE):
-    guildid = int(input('Enter Guild ID: '))
-    channelid = int(input('Enter Channel ID: '))
+    guildid = int(input('Enter Audio Guild ID: '))
+    channelid = int(input('Enter Audio Channel ID: '))
+    autojoin = bool(input('Should the bot join automatically on startup? (Default: True): ')) or True
     token = input('Enter Bot Token: ')
     sounds_dir = input('How should the folder with the sounds in it be called? ')
     ipv4 = input('Bind IPv4? (Default: 0.0.0.0): ')  or '0.0.0.0'
     port = int(input('Enter Port (Default: 5000): ') or 5000)
     user = input('Enter Username (Default: admin): ') or 'admin'
     pw = getpass('Enter Password: ')
+    lang = input('Which language should the Bot speak? (check folder called >lang<; Default: en): ') or "en"
     CUSTOM_CONFIG = {
-        "sound_files": {},
-        "sounds_dir": f"{sounds_dir}",
-        "guild_id": f"{guildid}",
-        "channel_id": f"{channelid}",
+        "soundboard": {
+            "sound_files": {},
+            "sounds_dir": f"{sounds_dir}",
+            "guild_id": f"{guildid}",
+            "channel_id": f"{channelid}",
+            "auto_join": autojoin,
+            "valume": 1
+        },
         "discord_token": f"{token}",
         "flask": {
             "host": f"{ipv4}",
@@ -48,38 +47,49 @@ if not os.path.exists(CONFIG_FILE):
             "username": f"{user}",
             "password": generate_password_hash(pw),
             "password_clear": pw
-        }
+        }, 
+        "lang": lang,
+        "lang_dir": "lang",
+        "interface_lang_dir": "./interface/lang/"
     }
     pw = None
-    save_config(CUSTOM_CONFIG)
+    with open(CONFIG_FILE, 'w') as f:
+        f.write(json.dumps(CUSTOM_CONFIG))
     print()
     print("Please run the following command and configure your password (note: you have to be in the bot's root directory): ")
-    print(f"$ cd public && htpasswd -c .htpasswd {user}")
+    print(f"$ cd ./interface/public && htpasswd -c .htpasswd {user}")
     exit(0)
 
 def add_sounds_from_directory():
-    global config
-    sounds_directory = str(config["sounds_dir"])
-    config = load_config()
-    
+    tmp = config.get()
+    sounds_directory = str(tmp["soundboard"]["sounds_dir"])
+
     for filename in os.listdir(sounds_directory):
         if filename.endswith('.mp3'):
             sound_name = os.path.splitext(filename)[0]
             sound_path = os.path.join(sounds_directory, filename)
             
-            if filename not in str(config["sound_files"]):
-                config["sound_files"][sound_name] = sound_path
+            if filename not in str(tmp["soundboard"]["sound_files"]):
+                config.set(f"soundboard/sound_files/{sound_name}", sound_path)
 
-    sounds = config["sound_files"].items()
+    sounds = tmp["soundboard"]["sound_files"].items()
 
     keys_to_delete = [sound_name for sound_name, sound_path in sounds if not os.path.exists(sound_path)]
 
     for key in keys_to_delete:
-        del config["sound_files"][key]
+        del tmp["soundboard"]["sound_files"][key]
 
-    save_config(config)
+    config.save(config)
 
-config = load_config()
+lang_manager = LangHandler(config.get()["lang"])
+
+auth = HTTPBasicAuth()
+
+@auth.verify_password
+def verify_password(username, password):
+    if username == config.get()["flask"]["username"] and config.get()["flask"]["password"] == password:
+        return username
+    return None
 
 # Discord-Bot Setup
 intents = discord.Intents.default()
@@ -90,54 +100,58 @@ intents.dm_messages = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Flask App Setup
-app = Flask(__name__, static_folder='public')
+app = Flask(__name__, static_folder='interface/public')
 
 @app.route('/')
+@auth.login_required
 def index():
     return app.send_static_file('index.html')
 
 @app.route('/api/sounds', methods=['GET'])
+@auth.login_required
 def get_sounds():
-    return jsonify(config["sound_files"])
+    return config.get()["soundboard"]["sound_files"]
 
 @app.route('/api/sounds/add', methods=['POST'])
+@auth.login_required
 def add_sound():
     data = request.json
     name = data.get('name')
     path = data.get('path')
     if name and path:
-        config["sound_files"][name] = path
-        save_config(config)
+        config.set(f"soundboard/sound_files/{name}", path)
         return jsonify({"message": "Sound added."})
     return jsonify({"message": "Invalid input."}), 400
 
 @app.route('/api/sounds/remove', methods=['POST'])
+@auth.login_required
 def remove_sound():
     data = request.json
     name = data.get('name')
-    if name in config["sound_files"]:
-        del config["sound_files"][name]
-        save_config(config)
+    if name in config.get()["soundboard"]["sound_files"]:
+        config.remove()["soundboard"]["sound_files"][name]
         return jsonify({"message": "Sound removed."})
     return jsonify({"message": "Sound not found."}), 404
 
 @app.route('/api/sounds/rename', methods=['POST'])
+@auth.login_required
 def rename_sound():
     data = request.json
     old_name = data.get('oldName')
     new_name = data.get('newName')
-    if old_name in config["sound_files"] and new_name not in config["sound_files"]:
-        config["sound_files"][new_name] = config["sound_files"].pop(old_name)
-        save_config(config)
+    if old_name in config.get()["soundboard"]["sound_files"] and new_name not in config.get()["soundboard"]["sound_files"]:
+        config.set(f"soundboard/sound_files/{new_name}", config.get()["soundboard"]["sound_files"][old_name])
+        config.remove(f"soundboard/sound_files/{old_name}")
         return jsonify({"message": "Sound renamed."})
     return jsonify({"message": "Invalid input or name already exists."}), 400
 
 @app.route('/api/sounds/play', methods=['POST'])
+@auth.login_required
 def play_sound():
     data = request.json
     name = data.get('name')
-    if name in config["sound_files"]:
-        guild_id = config["guild_id"]
+    if name in config.get()["soundboard"]["sound_files"]:
+        guild_id = config.get()["soundboard"]["guild_id"]
         asyncio.run_coroutine_threadsafe(play_sound_coroutine(guild_id, name), bot.loop)
         return jsonify({"message": "Playing sound."})
     return jsonify({"message": "Sound not found."}), 404
@@ -145,14 +159,18 @@ def play_sound():
 async def play_sound_coroutine(guild_id, sound_name):
     guild = bot.get_guild(int(guild_id))
     if guild and guild.voice_client:
-        source = discord.FFmpegPCMAudio(config["sound_files"][sound_name])
+        source = discord.FFmpegPCMAudio(
+            config.get()["sound_files"][sound_name],
+            options=f'-filter:a "volume={config.get()["soundboard"]["volume"]}"'
+        )
         guild.voice_client.play(source)
 
 @app.route('/api/channel/join', methods=['POST'])
+@auth.login_required
 def join_channel_api():
     data = request.json
-    guild_id = data.get('guild_id', config["guild_id"])
-    channel_id = data.get('channel_id', config["channel_id"])
+    guild_id = data.get('guild_id', config.get()["soundboard"]["guild_id"])
+    channel_id = data.get('channel_id', config.get()["soundboard"]["channel_id"])
     asyncio.run_coroutine_threadsafe(join_channel_coroutine(guild_id, channel_id), bot.loop)
     return jsonify({"message": "Joining channel."})
 
@@ -175,11 +193,20 @@ async def join_channel_coroutine(guild_id, channel_id):
         print(f"Guild with ID {guild_id} not found.")
 
 @app.route('/api/channel/leave', methods=['POST'])
+@auth.login_required
 def leave_channel_api():
     data = request.json
-    guild_id = data.get('guild_id', config["guild_id"])
+    guild_id = data.get('guild_id', config.get()["soundboard"]["guild_id"])
     asyncio.run_coroutine_threadsafe(leave_channel_coroutine(guild_id), bot.loop)
     return jsonify({"message": "Leaving channel."})
+
+@app.route('/api/bot/status', methods=['GET'])
+def bot_status():
+    guild = bot.get_guild(int(config.get()["soundboard"]["guild_id"]))
+    if guild and guild.voice_client and guild.voice_client.is_connected():
+        return jsonify({"status": True})
+    else:
+        return jsonify({"status": False})
 
 async def leave_channel_coroutine(guild_id):
     guild = bot.get_guild(int(guild_id))
@@ -190,27 +217,28 @@ async def leave_channel_coroutine(guild_id):
         print(f"No active voice client in guild {guild_id}")
 
 @app.route('/api/settings', methods=['POST'])
+@auth.login_required
 def update_settings():
     data = request.json
     guild_id = data.get('guild_id')
     channel_id = data.get('channel_id')
     if guild_id and channel_id:
-        config["guild_id"] = guild_id
-        config["channel_id"] = channel_id
-        save_config(config)
+        config.set("soundboard/guild_id", guild_id)
+        config.set("soundboard/channel_id", channel_id)
         return jsonify({"message": "Settings updated."})
     return jsonify({"message": "Invalid input."}), 400
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
     return jsonify({
-        "guild_id": config["guild_id"],
-        "channel_id": config["channel_id"]
+        "guild_id": config.get()["soundboard"]["guild_id"],
+        "channel_id": config.get()["soundboard"]["channel_id"]
     })
 
 @app.route('/api/sounds/stop', methods=['POST'])
+@auth.login_required
 def stop_sound():
-    guild_id = config["guild_id"]
+    guild_id = config.get()["soundboard"]["guild_id"]
     asyncio.run_coroutine_threadsafe(stop_sound_coroutine(guild_id), bot.loop)
     return jsonify({"message": "Stopping sound."})
 
@@ -221,6 +249,7 @@ async def stop_sound_coroutine(guild_id):
         print(f"Stopped sound in channel for guild {guild_id}")
 
 @app.route('/api/sounds/upload', methods=['POST'])
+@auth.login_required
 def upload_sound():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -232,21 +261,47 @@ def upload_sound():
     
     if file and file.filename.endswith('.mp3'):
         filename = file.filename
-        filepath = os.path.join(config["sounds_dir"], filename)
+        filepath = os.path.join(config.get()["soundboard"]["sounds_dir"], filename)
         file.save(filepath)
         
         sound_name = os.path.splitext(filename)[0]
-        config["sound_files"][sound_name] = filepath
-        save_config(config)
+        config.set(f"soundboard/sound_files/{sound_name}", filepath)
         
         return jsonify({'message': 'File uploaded successfully'}), 200
     else:
         return jsonify({'error': 'Invalid file type'}), 400
+    
+@app.route('/api/sounds/volume', methods=['POST'])
+@auth.login_required
+def set_volume():
+    data = request.json
+    volume = int(data.get('volume', 100))
+    
+    volume_level = volume / 100
+
+    config.set("soundboard/volume", volume_level)
+    
+    return jsonify({"message": f"Volume set to {volume}%"})
+
+@app.route('/api/lang', methods=['GET'])
+@auth.login_required
+def get_language():
+    lang = config.get()["lang"]
+    lang_file = os.path.join(config.get()["interface_lang_dir"], f'{lang}.json')
+
+    if os.path.exists(lang_file):
+        with open(lang_file, 'r') as f:
+            return jsonify(json.load(f))
+    return jsonify({"error": "Language file not found"}), 404
 
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user}')
     add_sounds_from_directory()
+
+    if(config.get()["soundboard"]["auto_join"]):
+        print(f"Joining: " + config.get()["soundboard"]["channel_id"])
+        await join_channel_coroutine(guild_id=config.get()["soundboard"]["guild_id"], channel_id=config.get()["soundboard"]["channel_id"])
 
     # Register all commands globally on all servers
     try:
@@ -275,7 +330,7 @@ async def join(interaction: discord.Interaction, channel_id: str = None):
         try:
             guild_id = interaction.guild.id
             await join_channel_coroutine(guild_id, channel_id)
-            await interaction.response.send_message(f"Joined channel <#{channel_id}>.")
+            await interaction.response.send_message(lang_manager("commands.join.success", channel_id))
         except Exception as e: 
             print(f"An error occurred: {e}") 
     
@@ -283,7 +338,7 @@ async def join(interaction: discord.Interaction, channel_id: str = None):
         if interaction.user.voice and interaction.user.voice.channel:
             channel = interaction.user.voice.channel
             await channel.connect()
-            await interaction.response.send_message(f"Joined channel <#{channel.id}>.")
+            await interaction.response.send_message(lang_manager("commands.join.success", channel.id))
         else:
             await interaction.response.send_message("You are not connected to a voice channel and no channel ID was provided.", ephemeral=True)
 
@@ -295,21 +350,35 @@ async def leave(interaction: discord.Interaction):
 
 @bot.tree.command(name='list', description="Lists all sounds.")
 async def list(interaction: discord.Interaction):
-    sound_names = config["sound_files"].keys()
+    sound_names = config.get()["soundboard"]["sound_files"].keys()
     embed = discord.Embed(title="Available Sounds", color=discord.Color.blue())
     
     embed.description = "\n".join(sound_names)
     
     await interaction.response.send_message(embed=embed)
 
+@bot.tree.command(name="language")
+async def language(interaction: discord.Interaction, lang: str = None):
+    if(lang):
+        available_langs = os.listdir(config.get()["lang_dir"])
+        if(lang + ".json" in available_langs): 
+            config.set("lang", lang)
+            global lang_manager
+            lang_manager = LangHandler(lang)
+            await interaction.response.send_message(content=lang_manager("commands.language.success"))
+        else:
+            print(f"{lang} is not in {available_langs}")
+    else: 
+        await interaction.response.send_message(content=lang_manager("commands.language.lang_empty"), ephemeral=True)
+
 def run_flask_app():
-    app.run(host=config["flask"]["host"], port=config["flask"]["port"])
+    app.run(host=config.get()["flask"]["host"], port=config.get()["flask"]["port"])
 
 if __name__ == '__main__':
     watchdog_process = subprocess.Popen(['python3', 'watchdog_script.py'])
     
     try:
         threading.Thread(target=run_flask_app).start()
-        bot.run(config["discord_token"])
+        bot.run(config.get()["discord_token"])
     finally:
         watchdog_process.terminate()

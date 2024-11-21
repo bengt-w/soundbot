@@ -6,4 +6,4 @@ werkzeug
 PyNaCL
 watchdog
 requests
-beautifulsoup4
+Flask-HTTPAuth
