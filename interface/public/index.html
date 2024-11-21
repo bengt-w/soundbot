@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discord Soundboard</title>
     <script>
-        var status_connected
-        var status_disconnected;
-        var status_err;
+        var status_connected = "";
+        var status_disconnected = "";
+        var status_err = "";
         // Fetch sounds from the API and update the soundboard
         async function fetchSounds() {
             const res = await fetch('/api/sounds');
@@ -176,8 +176,11 @@
             try {
                 const res = await fetch('/api/lang');
                 const langData = await res.json();
-
+                
                 // Zuordnung der Texte zu den entsprechenden Elementen
+                status_connected = langData.status_connected;
+                status_disconnected = langData.status_disconnected;
+                status_err = langData.status_error;
                 setElementText('channelSettingsLabel', langData.channel_settings);
                 setElementText('guildIdLabel', langData.guild_id);
                 setElementText('channelIdLabel', langData.channel_id);
@@ -189,9 +192,6 @@
                 setElementText('volumeControlLabel', langData.volume_control);
                 setElementText('botStatusLabel', langData.bot_status);
                 setElementText('updateStatusButton', langData.update_status);
-                var status_connected = langData.status_connected;
-                var status_disconnected = langData.status_disconnected;
-                var status_err = langData.status_error;
             } catch (error) {
                 console.error('Failed to get Language from API: ', error);
             }
@@ -199,19 +199,19 @@
 
         // Funktion, um den Verbindungsstatus des Bots zu aktualisieren
         function updateBotStatus() {
-            fetch('/api/bot/status')
-                .then(response => response.json())
-                .then(data => {
-                    const statusLabel = document.getElementById('botStatusLabel');
-                    statusLabel.textContent = data.status ? status_connected : status_disconnected;
-                    statusLabel.style.color = data.status ? "green" : "red";
-                })
-                .catch(error => {
-                    console.error('Error fetching bot status:', error);
-                    const statusLabel = document.getElementById('botStatusLabel');
-                    statusLabel.textContent = status_err;
-                    statusLabel.style.color = "orange";
-                });
+            fetch('/api/bot/status').then(response => response.json()).then(data => {if(data.status){
+                const statusLabel = document.getElementById('botStatusLabel');
+                statusLabel.textContent = data.status ? status_connected : status_disconnected;
+                statusLabel.style.color = data.status ? "green" : "red";
+            } else if (!data.status) {
+                const statusLabel = document.getElementById('botStatusLabel');
+                statusLabel.textContent = status_disconnected;
+                statusLabel.style.color = "red";
+            } else{
+                const statusLabel = document.getElementById('botStatusLabel');
+                statusLabel.textContent = status_err;
+                statusLabel.style.color = "orange";
+            }});
         }
 
         function init() {

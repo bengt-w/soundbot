@@ -1,19 +1,21 @@
 import os
-os.system("pip3 install -r requirements.txt")
-import subprocess
-import json
-import discord
-from discord.ext import commands
-from discord import app_commands
-from flask import Flask, request, jsonify, render_template
-import asyncio
-import threading
-from werkzeug.security import generate_password_hash, check_password_hash
-from getpass import getpass
-from flask_httpauth import HTTPBasicAuth
-import json
-from lang_handler import LangHandler
-import config_handler as config
+try:
+    import subprocess
+    import json
+    import discord
+    from discord.ext import commands
+    from discord import app_commands
+    from flask import Flask, request, jsonify, render_template
+    import asyncio
+    import threading
+    from werkzeug.security import generate_password_hash, check_password_hash
+    from getpass import getpass
+    from flask_httpauth import HTTPBasicAuth
+    import json
+    from lang_handler import LangHandler
+    import config_handler as config
+except ImportError:
+    os.system("pip3 install -r requirements.txt")
 
 if not os.path.exists("./sounds"):
     os.makedirs("sounds")
@@ -38,15 +40,14 @@ if not os.path.exists(CONFIG_FILE):
             "guild_id": f"{guildid}",
             "channel_id": f"{channelid}",
             "auto_join": autojoin,
-            "valume": 1
+            "volume": 1
         },
         "discord_token": f"{token}",
         "flask": {
             "host": f"{ipv4}",
             "port": port,
             "username": f"{user}",
-            "password": generate_password_hash(pw),
-            "password_clear": pw
+            "password": pw
         }, 
         "lang": lang,
         "lang_dir": "lang",
@@ -55,9 +56,6 @@ if not os.path.exists(CONFIG_FILE):
     pw = None
     with open(CONFIG_FILE, 'w') as f:
         f.write(json.dumps(CUSTOM_CONFIG))
-    print()
-    print("Please run the following command and configure your password (note: you have to be in the bot's root directory): ")
-    print(f"$ cd ./interface/public && htpasswd -c .htpasswd {user}")
     exit(0)
 
 def add_sounds_from_directory():
@@ -160,7 +158,7 @@ async def play_sound_coroutine(guild_id, sound_name):
     guild = bot.get_guild(int(guild_id))
     if guild and guild.voice_client:
         source = discord.FFmpegPCMAudio(
-            config.get()["sound_files"][sound_name],
+            config.get()["soundboard"]["sound_files"][sound_name],
             options=f'-filter:a "volume={config.get()["soundboard"]["volume"]}"'
         )
         guild.voice_client.play(source)

@@ -27,15 +27,35 @@ def set(key, value):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(cfg, f, indent=4)
 
+# def save(config):
+#     if isinstance(config, dict):
+#         to_save = config
+#     else:
+#         to_save = {key: value for key, value in config.__dict__.items() 
+#             if not key.startswith('__') and not isinstance(value, (types.FunctionType, types.ModuleType))}
+    
+#     with open(CONFIG_FILE, 'w') as f:
+#         json.dump(to_save, f, indent=4)
+
+
 def save(config):
-    if isinstance(config, dict):
-        to_save = config
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r') as f:
+            existing_data = json.load(f)
     else:
-        to_save = {key: value for key, value in config.__dict__.items() 
-            if not key.startswith('__') and not isinstance(value, (types.FunctionType, types.ModuleType))}
+        existing_data = {}
+    
+    if isinstance(config, dict):
+        updated_data = {**existing_data, **config}
+    else:
+        updated_data = {**existing_data, **{
+            key: value for key, value in config.__dict__.items()
+            if not key.startswith('__') and not isinstance(value, (types.FunctionType, types.ModuleType))
+        }}
     
     with open(CONFIG_FILE, 'w') as f:
-        json.dump(to_save, f, indent=4)
+        json.dump(updated_data, f, indent=4)
+
 
         
 def remove(key):

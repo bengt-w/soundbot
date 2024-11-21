@@ -16,12 +16,12 @@ def save_config(config):
 
 config = load_config()
 username = config['flask']['username']
-password_clear = config['flask']['password_clear']  # Passwort im Klartext
+password = config['flask']['password']
 host = config['flask']['host']
 port = config['flask']['port']
 
 # API Credentials
-auth = HTTPBasicAuth(username, password_clear)
+auth = HTTPBasicAuth(username, password)
 base_url = f'http://{host}:{port}/api/sounds'
 
 # Funktion zum Überprüfen, ob der Sound bereits registriert ist
