@@ -5,7 +5,7 @@ I got the initial code with a Tkinther interface from https://github.com/JonasB2
 I changed it so it is using flask as an WebUI with HTTP-Basic-Auth
 
 # Install: 
-`$ git clone https://github.com/illbreakurcode/soundbot` 
+`$ git clone https://git.absolutely-not-a-virus.de/soundbot/soundbot` 
 
 `$ cd soundbot` 
 
