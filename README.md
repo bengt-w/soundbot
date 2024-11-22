@@ -492,10 +492,3 @@ Stops the currently playing sound in the specified Discord server.
     }
 
 </details>
-
-
-# Features that maybe get added in the future:
- - being able to disable the webui
- - being able to disable the HTTP-Basic-Auth
- - automaticly generating the .htaccess using python
- - multi user support
