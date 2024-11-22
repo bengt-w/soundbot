@@ -42,6 +42,10 @@ if not os.path.exists(CONFIG_FILE):
             "auto_join": autojoin,
             "volume": 1
         },
+        "customization": {
+            "avatar": "./config//avatar.png",
+            "name": "Change me in the config.json"
+        },
         "discord_token": f"{token}",
         "flask": {
             "host": f"{ipv4}",
@@ -57,6 +61,18 @@ if not os.path.exists(CONFIG_FILE):
     with open(CONFIG_FILE, 'w') as f:
         f.write(json.dumps(CUSTOM_CONFIG))
     exit(0)
+
+async def change_user(pfp_location, name):
+    for guild in bot.guilds:
+        try:
+            await guild.me.edit(nick=name)
+            print(f"Nickname geändert auf {guild.name} in guild: {guild.name}")
+        except Exception as e:
+            print(f"Fehler beim Ändern des Nicknames in {guild.name}: {e}")
+    with open(pfp_location, 'rb') as avatar_file:
+        avatar_data = avatar_file.read()
+        await bot.user.edit(avatar=avatar_data, username=name)
+    print("User profile changed!")
 
 def add_sounds_from_directory():
     tmp = config.get()
@@ -295,6 +311,7 @@ def get_language():
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user}')
+    await change_user(config.get()["customization"]["avatar"], config.get()["customization"]["name"])
     add_sounds_from_directory()
 
     if(config.get()["soundboard"]["auto_join"]):
@@ -374,7 +391,7 @@ def run_flask_app():
 
 if __name__ == '__main__':
     watchdog_process = subprocess.Popen(['python3', 'watchdog_script.py'])
-    
+
     try:
         threading.Thread(target=run_flask_app).start()
         bot.run(config.get()["discord_token"])
