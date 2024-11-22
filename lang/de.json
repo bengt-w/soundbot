@@ -19,6 +19,11 @@
         "stop": {
 
         },
+        "add": {
+            "success": "Sound $(1) erfolgreich hinzugefügt.",
+            "error": "Sound konnte nicht hinzugefügt werden: $(1)",
+            "fileformat": "Bitte lade nur mp3-Dateien hoch!"
+        },
         "language": {
             "success": "Sprache erfolgreich geändert zu $(emote).",
             "lang_empty": "Bitte gib eine sprache an!"

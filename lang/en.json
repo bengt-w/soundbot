@@ -19,6 +19,11 @@
         "stop": {
 
         },
+        "add": {
+            "success": "Sound $(1) added successfully.",
+            "error": "An error occured while adding the Sound: $(1)",
+            "fileformat": "Please upload only mp3 files!"
+        },
         "language": {
             "success": "Language changed successfully to $(emote)",
             "lang_empty": "Please specify the language you want to switch to!"

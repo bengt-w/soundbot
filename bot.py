@@ -332,11 +332,27 @@ async def play(interaction: discord.Interaction, sound_name: str):
     await play_sound_coroutine(guild_id, sound_name)
     await interaction.response.send_message(f"Playing sound: {sound_name}")
 
+@bot.tree.command(name="add_sound", description="Upload an MP3 file to save it to the sounds directory.")
+async def add_sound(interaction: discord.Interaction, file: discord.Attachment):
+    # Check if the file is an MP3
+    if not file.filename.lower().endswith('.mp3'):
+        await interaction.response.send_message(lang_manager("commands.add.fileformat", channel_id), ephemeral=True)
+        return
+
+        # Save the file
+    try:
+        file_path = f"./sounds/{file.filename}"
+        await file.save(file_path)
+        await interaction.response.send_message(lang_manager("commands.add.success", file.filename))
+    except Exception as e:
+        await interaction.response.send_message(lang_manager("commands.add.error", e), ephemeral=True)
+
 @bot.tree.command(name='stop', description="Stops the current sound.")
 async def stop(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     await stop_sound_coroutine(guild_id)
     await interaction.response.send_message("Sound stopped.")
+
 @bot.tree.command(name='volume', description="Sets the volume in %")
 async def set_volume(interaction: discord.Interaction, new_volume_level: int = 100):
     config.set("soundboard/volume", new_volume_level / 100)
@@ -390,8 +406,9 @@ async def language(interaction: discord.Interaction, lang: str = None):
         await interaction.response.send_message(content=lang_manager("commands.language.lang_empty"), ephemeral=True)
 
 def run_flask_app():
-    app.run(host=config.get()["flask"]["host"], port=config.get()["flask"]["port"])
-
+    from waitress import serve
+    serve(app, host=config.get()["flask"]["host"], port=config.get()["flask"]["port"])
+    
 if __name__ == '__main__':
     watchdog_process = subprocess.Popen(['python3', 'watchdog_script.py'])
 
