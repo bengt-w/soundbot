@@ -1,20 +1,18 @@
 {
     "emote": ":flag_gb:",
     "commands": {
+        "play": {
+            "success": "Sound $(1) was played successfully.",
+            "404": "Sound $(1) was not found."
+        }, 
         "join": {
             "success": "Joined <#$(1)> successfully."
         },
         "leave": {
-
-        }, 
-        "play": {
-
+    
         }, 
         "list": {
-
-        }, 
-        "leave": {
-
+            
         }, 
         "stop": {
 

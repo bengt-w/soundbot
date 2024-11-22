@@ -1,19 +1,17 @@
 {
     "emote": ":flag_de:",
     "commands": {
+        "play": {
+            "success": "Sound $(1) wurde erfolgreich abgespielt.",
+            "404": "Sound $(1) wurde nicht gefunden."
+        },
         "join": {
             "success": "Joined <#$(1)> successfully."
         },
         "leave": {
 
         }, 
-        "play": {
-
-        }, 
         "list": {
-
-        }, 
-        "leave": {
 
         }, 
         "stop": {
