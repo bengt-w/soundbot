@@ -337,7 +337,10 @@ async def stop(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     await stop_sound_coroutine(guild_id)
     await interaction.response.send_message("Sound stopped.")
-
+@bot.tree.command(name='volume', description="Sets the volume in %")
+async def set_volume(interaction: discord.Interaction, new_volume_level: int = 100):
+    config.set("soundboard/volume", new_volume_level / 100)
+    await interaction.response.send_message(f"Volume set to {config.get()["soundboard"]["volume"] * 100}%")
 @bot.tree.command(name='join', description="Joins the provided channelid/Your channel")
 async def join(interaction: discord.Interaction, channel_id: str = None):
     if channel_id:
