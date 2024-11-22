@@ -143,7 +143,7 @@ def remove_sound():
     data = request.json
     name = data.get('name')
     if name in config.get()["soundboard"]["sound_files"]:
-        config.remove()["soundboard"]["sound_files"][name]
+        config.remove(f"soundboard/sound_files/{name}")
         return jsonify({"message": "Sound removed."})
     return jsonify({"message": "Sound not found."}), 404
 
