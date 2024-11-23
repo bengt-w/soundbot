@@ -1,0 +1,27 @@
+{
+    "soundboard": {
+        "sound_files": {
+
+        },
+        "sounds_dir": "sounds",
+        "guild_id": "",
+        "channel_id": "",
+        "auto_join": true,
+        "_COMMENT": "volume is a decimal number so 0.5 is 50% etc. but max_volume is in percent",
+        "volume": 1.0,
+        "max_volume": 500
+    },
+    "customization": {
+        "avatar": "./config/avatar.png",
+        "name": "Agent P."
+    },
+    "discord_token": "",
+    "flask": {
+        "host": "0.0.0.0",
+        "url": "http://127.0.0.1:5000",
+        "port": 5000
+    },
+    "lang": "en",
+    "lang_dir": "lang",
+    "interface_lang_dir": "./interface/lang/"
+}
