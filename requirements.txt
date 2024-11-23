@@ -7,3 +7,4 @@ PyNaCL
 watchdog
 requests
 Flask-HTTPAuth
+waitress
