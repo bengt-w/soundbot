@@ -166,7 +166,5 @@ config/
 # Don't leak my cringe test sounds
 sounds/
 
-.dockerignore
-Dockerfile
 users.json
 test.py

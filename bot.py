@@ -18,55 +18,13 @@ try:
 except ImportError:
     os.system("pip3 install -r requirements.txt")
 
-if not os.path.exists("./sounds"):
-    os.makedirs("sounds")
+sounds_dir = config.get()["soundboard"]["sounds_dir"]
+
+if not os.path.exists(sounds_dir):
+    os.makedirs(sounds_dir)
 
 # if you want to change this don't forget to change it in the config_handler.py
 CONFIG_FILE = os.path.join("config", "config.json")
-
-if not os.path.exists(CONFIG_FILE):
-    guildid = int(input('Enter Audio Guild ID: '))
-    channelid = int(input('Enter Audio Channel ID: '))
-    autojoin = bool(
-        input('Should the bot join automatically on startup? (Default: True): ')) or True
-    token = input('Enter Bot Token: ')
-    sounds_dir = input(
-        'How should the folder with the sounds in it be called? ')
-    ipv4 = input('Bind IPv4? (Default: 0.0.0.0): ') or '0.0.0.0'
-    port = int(input('Enter Port (Default: 5000): ') or 5000)
-    user = input('Enter Username (Default: admin): ') or 'admin'
-    pw = getpass('Enter Password: ')
-    lang = input(
-        'Which language should the Bot speak? (check folder called >lang<; Default: en): ') or "en"
-    CUSTOM_CONFIG = {
-        "soundboard": {
-            "sound_files": {},
-            "sounds_dir": f"{sounds_dir}",
-            "guild_id": f"{guildid}",
-            "channel_id": f"{channelid}",
-            "auto_join": autojoin,
-            "volume": 1
-        },
-        "customization": {
-            "avatar": "./config//avatar.png",
-            "name": "Change me in the config.json"
-        },
-        "discord_token": f"{token}",
-        "flask": {
-            "host": f"{ipv4}",
-            "port": port,
-            "username": f"{user}",
-            "password": pw
-        },
-        "lang": lang,
-        "lang_dir": "lang",
-        "interface_lang_dir": "./interface/lang/"
-    }
-    pw = None
-    with open(CONFIG_FILE, 'w') as f:
-        f.write(json.dumps(CUSTOM_CONFIG))
-    exit(0)
-
 
 async def change_user(pfp_location, name):
     for guild in bot.guilds:
@@ -75,9 +33,12 @@ async def change_user(pfp_location, name):
             print(f"Nickname geändert auf {guild.name} in guild: {guild.name}")
         except Exception as e:
             print(f"Fehler beim Ändern des Nicknames in {guild.name}: {e}")
-    with open(pfp_location, 'rb') as avatar_file:
-        avatar_data = avatar_file.read()
-        await bot.user.edit(avatar=avatar_data, username=name)
+    if os.path.exists(pfp_location):
+        with open(pfp_location, 'rb') as avatar_file:
+            avatar_data = avatar_file.read()
+            await bot.user.edit(avatar=avatar_data, username=name)
+    else:
+        print("Avatar file not found.")
     print("User profile changed!")
 
 
@@ -127,12 +88,10 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # Flask App Setup
 app = Flask(__name__, static_folder='interface/public')
 
-
 @app.route('/')
 @auth.login_required
 def index():
     return app.send_static_file('index.html')
-
 
 @app.route('/api/sounds', methods=['GET'])
 @auth.login_required
@@ -220,6 +179,7 @@ async def join_channel_coroutine(guild_id, channel_id):
             if not guild.voice_client:
                 try:
                     await channel.connect()
+                    await play_sound_coroutine(guild_id, "join")
                     print(f"Successfully joined channel {channel_id}")
                 except Exception as e:
                     print(f"Failed to join channel: {e}")
@@ -440,6 +400,7 @@ async def join(interaction: discord.Interaction, channel_id: str = None):
             guild_id = interaction.guild.id
             await join_channel_coroutine(guild_id, channel_id)
             await interaction.response.send_message(lang_manager("commands.join.success", channel_id))
+            await play_sound_coroutine(guild_id, "join")
         except Exception as e:
             print(f"An error occurred: {e}")
 
