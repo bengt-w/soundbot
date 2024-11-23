@@ -1,4 +1,5 @@
 {
+    "discord_token": "",
     "soundboard": {
         "sound_files": {
 
@@ -15,7 +16,6 @@
         "avatar": "./config/avatar.png",
         "name": "Agent P."
     },
-    "discord_token": "",
     "flask": {
         "host": "0.0.0.0",
         "url": "http://127.0.0.1:5000",
