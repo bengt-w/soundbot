@@ -285,7 +285,7 @@ def upload_sound():
 def set_volume():
     data = request.json
     volume = int(data.get('volume', 100))
-    if volume_level > config.get()["soundboard"]["max_volume"]:
+    if 0 < volume_level <= config.get()["soundboard"]["max_volume"]:
         volume_level = volume / 100
         config.set("soundboard/volume", volume_level)
         return jsonify({"message": f"Volume set to {volume}%"})
@@ -385,7 +385,7 @@ async def stop(interaction: discord.Interaction):
 
 @bot.tree.command(name='volume', description="Sets the volume in %")
 async def set_volume_cmd(interaction: discord.Interaction, new_volume_level: int = 100):
-    if(new_volume_level < config.get()["soundboard"]["max_volume"]):
+    if(0 < new_volume_level <= config.get()["soundboard"]["max_volume"]):
         config.set("soundboard/volume", new_volume_level / 100)
         await interaction.response.send_message(lang_manager("commands.volume.success", config.get()["soundboard"]["volume"] * 100))
     else:
