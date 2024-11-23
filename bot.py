@@ -18,8 +18,6 @@ try:
 except ImportError:
     os.system("pip3 install -r requirements.txt")
 
-os.mkdir("config", exist_ok=True)
-
 sounds_dir = config.get()["soundboard"]["sounds_dir"]
 
 if not os.path.exists(sounds_dir):
