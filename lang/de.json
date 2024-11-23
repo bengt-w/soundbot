@@ -2,20 +2,21 @@
     "emote": ":flag_de:",
     "commands": {
         "play": {
-            "success": "Sound $(1) wurde erfolgreich abgespielt.",
+            "success": "Sound $(1) wird abgespielt.",
             "404": "Sound $(1) wurde nicht gefunden."
         },
         "join": {
-            "success": "Joined <#$(1)> successfully."
+            "success": "Joined <#$(1)> successfully.",
+            "no_nothing": "Du bist weder mit einem Sprachkanel verbunden, noch bist du in einem Sprachkanal."
         },
         "leave": {
-
+            "success": "Kanal verlassen."
         }, 
         "list": {
-
+            "title": "Verfügbare Sounds:"
         }, 
         "stop": {
-
+            "success": "Stopped playing sounds."
         },
         "add": {
             "success": "Sound $(1) erfolgreich hinzugefügt.",
@@ -31,9 +32,12 @@
                 "title": "Anmeldedaten",
                 "code": "Code",
                 "username": "Benutzername",
-                "url": "URL",
-                "color": ""
+                "url": "URL"
             }
+        },
+        "volume": {
+            "success": "Volume erfolgreich auf $(1)% gesetzt.",
+            "max": "Volume kann nicht höher als $(1)% gesetzt werden!"
         }
     }
 }

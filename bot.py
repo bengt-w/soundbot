@@ -387,7 +387,7 @@ async def play(interaction: discord.Interaction, sound_name: str):
     except Exception as e:
         await interaction.response.send_message(lang_manager("commands.play.404", sound_name), ephemeral=True)
         return
-    await interaction.response.send_message(f"Playing sound: {sound_name}")
+    await interaction.response.send_message(lang_manager("commands.play.success", sound_name))
 
 @play.autocomplete('sound_name')
 async def play_cmd_autocomplete(interaction: discord.Interaction, current: str):
@@ -420,16 +420,16 @@ async def add_sound_cmd(interaction: discord.Interaction, file: discord.Attachme
 async def stop(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     await stop_sound_coroutine(guild_id)
-    await interaction.response.send_message("Sound stopped.")
+    await interaction.response.send_message(lang_manager("commands.stop.success"))
 
 
 @bot.tree.command(name='volume', description="Sets the volume in %")
 async def set_volume_cmd(interaction: discord.Interaction, new_volume_level: int = 100):
     if(new_volume_level < config.get()["soundboard"]["max_volume"]):
         config.set("soundboard/volume", new_volume_level / 100)
-        await interaction.response.send_message(f"Volume set to {config.get()["soundboard"]["volume"] * 100}%")
+        await interaction.response.send_message(lang_manager("commands.volume.success", config.get()["soundboard"]["volume"] * 100))
     else:
-        await interaction.response.send_message(f"Volume can't be higher than {config.get()["soundboard"]["max_volume"]}%")
+        await interaction.response.send_message(lang_manager("commands.volume.max", config.get()["soundboard"]["max_volume"]))
 
 
 @bot.tree.command(name='join', description="Joins the provided channelid/Your channel")
@@ -449,20 +449,20 @@ async def join(interaction: discord.Interaction, channel_id: str = None):
             await channel.connect()
             await interaction.response.send_message(lang_manager("commands.join.success", channel.id))
         else:
-            await interaction.response.send_message("You are not connected to a voice channel and no channel ID was provided.", ephemeral=True)
+            await interaction.response.send_message(lang_manager("commands.join.no_nothing"), ephemeral=True)
 
 
 @bot.tree.command(name='leave', description="Disconnects the bot from the current voice channel.")
 async def leave(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     await leave_channel_coroutine(guild_id)
-    await interaction.response.send_message("Left the voice channel.")
+    await interaction.response.send_message(lang_manager("commands.leave.success"))
 
 
 @bot.tree.command(name='list', description="Lists all sounds.")
 async def list(interaction: discord.Interaction):
     sound_names = config.get()["soundboard"]["sound_files"].keys()
-    embed = discord.Embed(title="Available Sounds", color=discord.Color.blue())
+    embed = discord.Embed(title=lang_manager("commands.list.title"), color=discord.Color.blue())
 
     embed.description = "\n".join(sound_names)
 

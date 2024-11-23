@@ -2,20 +2,21 @@
     "emote": ":flag_gb:",
     "commands": {
         "play": {
-            "success": "Sound $(1) was played successfully.",
+            "success": "Sound $(1) is played.",
             "404": "Sound $(1) was not found."
         }, 
         "join": {
-            "success": "Joined <#$(1)> successfully."
+            "success": "Joined <#$(1)> successfully.",
+            "no_nothing": "You are not connected to a voice channel, nor are you in a voice channel."
         },
         "leave": {
-    
+            "success": "Left channel."    
         }, 
         "list": {
-            
+            "title": "Available Sounds:"
         }, 
         "stop": {
-
+            "success": "Stopped playing sounds."
         },
         "add": {
             "success": "Sound $(1) added successfully.",
@@ -25,6 +26,18 @@
         "language": {
             "success": "Language changed successfully to $(emote)",
             "lang_empty": "Please specify the language you want to switch to!"
+        },
+        "logincode": {
+            "success_embed": {
+                "title": "Login Data",
+                "code": "Code",
+                "username": "Username",
+                "url": "URL"
+            }
+        },
+        "volume": {
+            "success": "Volume set to $(1)%.",
+            "max": "Volume can not be higher than $(1)%!"
         }
     }
 }
