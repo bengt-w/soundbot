@@ -483,6 +483,15 @@ async def language(interaction: discord.Interaction, lang: str = None):
     else:
         await interaction.response.send_message(content=lang_manager("commands.language.lang_empty", str(os.listdir(config.get()["lang_dir"]))), ephemeral=True)
 
+@language.autocomplete('lang')
+async def language_cmd_autocomplete(interaction: discord.Interaction, current: str):
+    langs = os.listdir(config.get()["lang_dir"])
+    langs_no_json = []
+    for lang in langs:
+        if lang.endswith(".json"):
+            langs_no_json.append(lang[:-5])
+    filtered = [lang for lang in langs_no_json if current.lower() in lang.lower()]
+    return [discord.app_commands.Choice(name=lang, value=lang) for lang in filtered]
 
 def run_flask_app():
     from waitress import serve
