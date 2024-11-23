@@ -3,6 +3,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from user_handler import get_authcode
 import json
 
 # Lade die Konfigurationsdaten aus der config.json
@@ -15,8 +16,8 @@ def save_config(config):
         json.dump(config, f, indent=4)
 
 config = load_config()
-username = config['flask']['username']
-password = config['flask']['password']
+username = "watchdog"
+password = get_authcode(username)
 host = config['flask']['host']
 port = config['flask']['port']
 

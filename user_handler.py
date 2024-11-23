@@ -9,6 +9,14 @@ if not os.path.exists(USERFILE):
     with open(USERFILE, 'w') as f:
         f.write("{}")
     
+def get_authcode(username):
+    with open(USERFILE, 'r') as f:
+        users = json.load(f)
+        try: 
+            return users[username]
+        except KeyError:
+            raise ValueError("User not found")
+
 def gen_authcode(username):
     with open(USERFILE, 'r') as f:
         users = json.load(f)

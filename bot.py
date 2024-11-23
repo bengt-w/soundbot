@@ -501,6 +501,7 @@ def run_flask_app():
 
 
 if __name__ == '__main__':
+    gen_authcode("watchdog")
     watchdog_process = subprocess.Popen(['python3', 'watchdog_script.py'])
 
     try:
