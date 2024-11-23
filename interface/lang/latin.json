@@ -1,0 +1,19 @@
+{
+    "title": "Soundboard",
+    "channel_settings": "Canale Occasus",
+    "guild_id": "Guild ID:",
+    "channel_id": "Canale ID:",
+    "save_settings": "save occasus",
+    "join_channel canalem": "coniungere Channel",
+    "leave_channel": "relinque canalem",
+    "stop_sound": "desine sonus",
+    "upload_sound": "Index sonitus",
+    "volume_control": "Volume imperium",
+    "bot_status": "bot Status",
+    "update_status": "renovatio status",
+    "available_sounds": "Praesto sonos",
+    "status_disconnected": "Disconnected",
+    "status_connected": "Coniunctus", 
+    "status_error": "Error!"
+}
+
