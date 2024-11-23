@@ -14,6 +14,7 @@ try:
     import json
     from lang_handler import LangHandler
     import config_handler as config
+    from user_handler import validate_authcode, gen_authcode
 except ImportError:
     os.system("pip3 install -r requirements.txt")
 
@@ -110,7 +111,7 @@ auth = HTTPBasicAuth()
 
 @auth.verify_password
 def verify_password(username, password):
-    if username == config.get()["flask"]["username"] and config.get()["flask"]["password"] == password:
+    if validate_authcode(username, password):
         return username
     return None
 
@@ -362,7 +363,22 @@ async def on_ready():
     except Exception as e:
         print(f"Failed to sync commands: {e}")
 
-# Define slash commands:
+@bot.tree.command(name='logincode', description="Generates a logincode.")
+async def login_code(interaction: discord.Interaction):
+    name = interaction.user.name
+    code = gen_authcode(name)
+    embed = discord.Embed(
+        title=lang_manager("commands.logincode.success_embed.title"),
+        description="",
+        color=discord.Color.green()
+    )
+    
+    embed.add_field(name=lang_manager("commands.logincode.success_embed.username"), value=f"`{name}`", inline=False)
+    embed.add_field(name=lang_manager("commands.logincode.success_embed.code"), value=f"`{code}`", inline=False)
+    embed.add_field(name=lang_manager("commands.logincode.success_embed.url"), value=config.get()["flask"]["url"], inline=False)
+    
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
 @bot.tree.command(name='play', description="Plays a provided sound.")
 async def play(interaction: discord.Interaction, sound_name: str):
     guild_id = interaction.guild.id

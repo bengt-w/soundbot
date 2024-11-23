@@ -168,3 +168,5 @@ sounds/
 
 .dockerignore
 Dockerfile
+users.json
+test.py

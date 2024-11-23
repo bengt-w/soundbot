@@ -25,6 +25,15 @@
         "language": {
             "success": "Sprache erfolgreich geändert zu $(emote).",
             "lang_empty": "Bitte gib eine sprache an!"
+        },
+        "logincode": {
+            "success_embed": {
+                "title": "Anmeldedaten",
+                "code": "Code",
+                "username": "Benutzername",
+                "url": "URL",
+                "color": ""
+            }
         }
     }
 }
