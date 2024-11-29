@@ -38,6 +38,9 @@
         "volume": {
             "success": "Volume set to $(1)%.",
             "max": "Volume can not be higher than $(1)%!"
+        },
+        "random": {
+            "success": "Sound $(1) is played randomly."
         }
     }
 }

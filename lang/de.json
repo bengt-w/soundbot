@@ -38,6 +38,9 @@
         "volume": {
             "success": "Volume erfolgreich auf $(1)% gesetzt.",
             "max": "Volume kann nicht höher als $(1)% gesetzt werden!"
+        },
+        "random": {
+            "success": "Sound $(1) wird zufälligerweise abgespielt."
         }
     }
 }

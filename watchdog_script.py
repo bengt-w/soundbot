@@ -79,7 +79,6 @@ if __name__ == "__main__":
     observer = Observer()
     observer.schedule(event_handler, path, recursive=False)
     observer.start()
-
     print(f"Watching directory: {path}")
     
     try:

@@ -1,6 +1,7 @@
 import os
 try:
     import subprocess
+    from datetime import datetime 
     import json
     import discord
     from discord.ext import commands
@@ -12,9 +13,11 @@ try:
     from getpass import getpass
     from flask_httpauth import HTTPBasicAuth
     import json
+    import random
     from lang_handler import LangHandler
     import config_handler as config
     from user_handler import validate_authcode, gen_authcode
+    from log_handler import log as logger
 except ImportError:
     os.system("pip3 install -r requirements.txt")
 
@@ -184,7 +187,8 @@ async def join_channel_coroutine(guild_id, channel_id):
                 except Exception as e:
                     print(f"Failed to join channel: {e}")
             else:
-                print("Bot is already connected to a voice channel.")
+                await leave_channel_coroutine(guild_id)
+                await join_channel_coroutine(guild_id, channel_id)
         else:
             print(f"Channel with ID {channel_id} not found.")
     else:
@@ -341,10 +345,12 @@ async def login_code(interaction: discord.Interaction):
 
 @bot.tree.command(name='play', description="Plays a provided sound.")
 async def play(interaction: discord.Interaction, sound_name: str):
+    logger(f"{interaction.user.name}@{interaction.guild.id}: commands.play {sound_name}")
     guild_id = interaction.guild.id
     try:
         await play_sound_coroutine(guild_id, sound_name)
     except Exception as e:
+        logger(f"{interaction.user.name}@{interaction.guild.id}: Sound not found: {sound_name}", level="ERROR")
         await interaction.response.send_message(lang_manager("commands.play.404", sound_name), ephemeral=True)
         return
     await interaction.response.send_message(lang_manager("commands.play.success", sound_name))
@@ -356,14 +362,16 @@ async def play_cmd_autocomplete(interaction: discord.Interaction, current: str):
         sounds.append(sound)
         
     filtered = [sound for sound in sounds if current.lower() in sound.lower()]
-    return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered]
+    if len(filtered) > 25:
+        return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered[:25]]
+    else:
+        return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered]
     
-
-
 @bot.tree.command(name="add_sound", description="Upload an MP3 file to save it to the sounds directory.")
 async def add_sound_cmd(interaction: discord.Interaction, file: discord.Attachment):
-    # Check if the file is an MP3
+    logger(f"{interaction.user.name}@{interaction.guild.id}: commands.add_sound {file.filename}")
     if not file.filename.lower().endswith('.mp3'):
+        logger(f"{interaction.user.name}@{interaction.guild.id}: File was not an mp3 file: {file.filename}", level="ERROR")
         await interaction.response.send_message(lang_manager("commands.add.fileformat"), ephemeral=True)
         return
 
@@ -373,11 +381,13 @@ async def add_sound_cmd(interaction: discord.Interaction, file: discord.Attachme
         await file.save(file_path)
         await interaction.response.send_message(lang_manager("commands.add.success", file.filename))
     except Exception as e:
+        logger(f"{interaction.user.name}@{interaction.guild.id}: commands.add Error: {e}", level="ERROR")
         await interaction.response.send_message(lang_manager("commands.add.error", e), ephemeral=True)
 
 
 @bot.tree.command(name='stop', description="Stops the current sound.")
 async def stop(interaction: discord.Interaction):
+    logger(f"{interaction.user.name}@{interaction.guild.id}: commands.stop")
     guild_id = interaction.guild.id
     await stop_sound_coroutine(guild_id)
     await interaction.response.send_message(lang_manager("commands.stop.success"))
@@ -385,11 +395,13 @@ async def stop(interaction: discord.Interaction):
 
 @bot.tree.command(name='volume', description="Sets the volume in %")
 async def set_volume_cmd(interaction: discord.Interaction, new_volume_level: int = 100):
+    logger(f"{interaction.user.name}@{interaction.guild.id}: commands.volume {new_volume_level}")
     if(0 < new_volume_level <= config.get()["soundboard"]["max_volume"]):
         config.set("soundboard/volume", new_volume_level / 100)
         await interaction.response.send_message(lang_manager("commands.volume.success", config.get()["soundboard"]["volume"] * 100))
     else:
         await interaction.response.send_message(lang_manager("commands.volume.max", config.get()["soundboard"]["max_volume"]))
+        logger(f"{interaction.user.name}@{interaction.guild.id}: commands.volume {new_volume_level}>{config.get()['soundboard']['max_volume']}", level="ERROR")
 
 
 @bot.tree.command(name='join', description="Joins the provided channelid/Your channel")
@@ -402,6 +414,7 @@ async def join(interaction: discord.Interaction, channel_id: str = None):
             await interaction.response.send_message(lang_manager("commands.join.success", channel_id))
             await play_sound_coroutine(guild_id, "join")
         except Exception as e:
+            logger(f"{interaction.user.name}@{interaction.guild.id}: commands.join Error: {e}")
             print(f"An error occurred: {e}")
 
     else:
@@ -411,6 +424,7 @@ async def join(interaction: discord.Interaction, channel_id: str = None):
             await interaction.response.send_message(lang_manager("commands.join.success", channel.id))
         else:
             await interaction.response.send_message(lang_manager("commands.join.no_nothing"), ephemeral=True)
+            logger(f"{interaction.user.name}@{interaction.guild.id}: commands.join Error: No channel id nor user is in channel")
 
 
 @bot.tree.command(name='leave', description="Disconnects the bot from the current voice channel.")
@@ -418,10 +432,12 @@ async def leave(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     await leave_channel_coroutine(guild_id)
     await interaction.response.send_message(lang_manager("commands.leave.success"))
+    logger(f"{interaction.user.name}@{interaction.guild.id}: commands.leave")
 
 
 @bot.tree.command(name='list', description="Lists all sounds.")
 async def list(interaction: discord.Interaction):
+    logger(f"{interaction.user.name}@{interaction.guild.id}: commands.list")
     sound_names = config.get()["soundboard"]["sound_files"].keys()
     embed = discord.Embed(title=lang_manager("commands.list.title"), color=discord.Color.blue())
 
@@ -429,6 +445,12 @@ async def list(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
+@bot.tree.command(name='random', description="Plays a random sound.")
+async def random_cmd(interaction: discord.Interaction):
+    guild_id = interaction.guild.id
+    random_sound = await rand_sound(guild_id)
+    await interaction.response.send_message(lang_manager("commands.random.success", random_sound))
+    logger(f"{interaction.user.name}@{interaction.guild.id}: commands.random")
 
 @bot.tree.command(name="language")
 async def language(interaction: discord.Interaction, lang: str = None):
@@ -439,10 +461,13 @@ async def language(interaction: discord.Interaction, lang: str = None):
             global lang_manager
             lang_manager = LangHandler(lang)
             await interaction.response.send_message(content=lang_manager("commands.language.success"))
+            logger(f"{interaction.user.name}@{interaction.guild.id}: commands.language {lang}")
         else:
             print(f"{lang} is not in {available_langs}")
+            logger(f"{interaction.user.name}@{interaction.guild.id}: commands.language {lang} not in {available_langs}", level="ERROR")
     else:
         await interaction.response.send_message(content=lang_manager("commands.language.lang_empty", str(os.listdir(config.get()["lang_dir"]))), ephemeral=True)
+        logger(f"{interaction.user.name}@{interaction.guild.id}: commands.language Field 'lang' is empty", level="ERROR")
 
 @language.autocomplete('lang')
 async def language_cmd_autocomplete(interaction: discord.Interaction, current: str):
@@ -454,6 +479,11 @@ async def language_cmd_autocomplete(interaction: discord.Interaction, current: s
     filtered = [lang for lang in langs_no_json if current.lower() in lang.lower()]
     return [discord.app_commands.Choice(name=lang, value=lang) for lang in filtered]
 
+async def rand_sound(guild_id, sound_group= None):
+    sound = random.choice(config.get()["soundboard"]["sound_files"].keys())
+    await play_sound_coroutine(guild_id, sound)
+    return str(sound)
+
 def run_flask_app():
     from waitress import serve
     serve(app, host=config.get()["flask"]["host"],
@@ -463,10 +493,14 @@ def run_flask_app():
 
 if __name__ == '__main__':
     gen_authcode("watchdog")
+    LOG_FILE = os.path.join("logs", f"log-{datetime.now().strftime("%m-%d-%Y_%H:%M:%S")}.txt")
+    LATEST_LOG_FILE = os.path.join("logs", "latest.txt")
     watchdog_process = subprocess.Popen(['python3', 'watchdog_script.py'])
 
     try:
         threading.Thread(target=run_flask_app).start()
         bot.run(config.get()["discord_token"])
     finally:
+        open(LOG_FILE, 'a').close()
+        os.rename(LATEST_LOG_FILE, LOG_FILE)
         watchdog_process.terminate()
