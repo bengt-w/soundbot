@@ -6,7 +6,7 @@ try:
     import discord
     from discord.ext import commands
     from discord import app_commands
-    from flask import Flask, request, jsonify, render_template
+    from flask import Flask, request, jsonify, render_template, request
     import asyncio
     import threading
     from werkzeug.security import generate_password_hash, check_password_hash
@@ -94,11 +94,15 @@ app = Flask(__name__, static_folder='interface/public')
 @app.route('/')
 @auth.login_required
 def index():
+    logger(f"{request.authorization.username}@WEBUI: GET /index.html")
     return app.send_static_file('index.html')
+
+
 
 @app.route('/api/sounds', methods=['GET'])
 @auth.login_required
 def get_sounds():
+    logger(f"{request.authorization.username}@WEBUI: GET /api/sounds")
     return config.get()["soundboard"]["sound_files"]
 
 
@@ -108,6 +112,7 @@ def add_sound():
     data = request.json
     name = data.get('name')
     path = data.get('path')
+    logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/add {name}@{path}")
     if name and path:
         config.set(f"soundboard/sound_files/{name}", path)
         return jsonify({"message": "Sound added."})
@@ -119,6 +124,7 @@ def add_sound():
 def remove_sound():
     data = request.json
     name = data.get('name')
+    logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/remove {name}")
     if name in config.get()["soundboard"]["sound_files"]:
         config.remove(f"soundboard/sound_files/{name}")
         return jsonify({"message": "Sound removed."})
@@ -131,6 +137,7 @@ def rename_sound():
     data = request.json
     old_name = data.get('oldName')
     new_name = data.get('newName')
+    logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/rename '{old_name}' > '{new_name}'")
     if old_name in config.get()["soundboard"]["sound_files"] and new_name not in config.get()["soundboard"]["sound_files"]:
         config.set(f"soundboard/sound_files/{new_name}",
                    config.get()["soundboard"]["sound_files"][old_name])
@@ -146,10 +153,13 @@ def play_sound():
     name = data.get('name')
     if name in config.get()["soundboard"]["sound_files"]:
         guild_id = config.get()["soundboard"]["guild_id"]
+        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/play {name}")
         asyncio.run_coroutine_threadsafe(
             play_sound_coroutine(guild_id, name), bot.loop)
         return jsonify({"message": "Playing sound."})
-    return jsonify({"message": "Sound not found."}), 404
+    else: 
+        return jsonify({"message": "Sound not found."}), 404
+        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/play 404", level="ERROR")
 
 
 async def play_sound_coroutine(guild_id, sound_name):
@@ -170,7 +180,9 @@ def join_channel_api():
     channel_id = data.get('channel_id', config.get()[
                           "soundboard"]["channel_id"])
     asyncio.run_coroutine_threadsafe(
-        join_channel_coroutine(guild_id, channel_id), bot.loop)
+        join_channel_coroutine(guild_id, channel_id), bot.loop
+    )
+    logger(f"{request.authorization.username}@WEBUI: POST /api/channel/join {channel_id}@{guild_id}")
     return jsonify({"message": "Joining channel."})
 
 
@@ -201,8 +213,11 @@ def leave_channel_api():
     data = request.json
     guild_id = data.get('guild_id', config.get()["soundboard"]["guild_id"])
     asyncio.run_coroutine_threadsafe(
-        leave_channel_coroutine(guild_id), bot.loop)
+        leave_channel_coroutine(guild_id), bot.loop
+    )
+    logger(f"{request.authorization.username}@WEBUI: POST /api/channel/leave")
     return jsonify({"message": "Leaving channel."})
+
 
 
 @app.route('/api/bot/status', methods=['GET'])
@@ -232,12 +247,15 @@ def update_settings():
     if guild_id and channel_id:
         config.set("soundboard/guild_id", guild_id)
         config.set("soundboard/channel_id", channel_id)
+        logger(f"{request.authorization.username}@WEBUI: POST /api/settings {channel_id}@{guild_id}")        
         return jsonify({"message": "Settings updated."})
+    logger(f"{request.authorization.username}@WEBUI: POST /api/settings")
     return jsonify({"message": "Invalid input."}), 400
 
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
+    logger(f"{request.authorization.username}@WEBUI: GET /api/settings")
     return jsonify({
         "guild_id": config.get()["soundboard"]["guild_id"],
         "channel_id": config.get()["soundboard"]["channel_id"]
@@ -247,6 +265,7 @@ def get_settings():
 @app.route('/api/sounds/stop', methods=['POST'])
 @auth.login_required
 def stop_sound():
+    logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/stop")
     guild_id = config.get()["soundboard"]["guild_id"]
     asyncio.run_coroutine_threadsafe(stop_sound_coroutine(guild_id), bot.loop)
     return jsonify({"message": "Stopping sound."})
@@ -263,11 +282,13 @@ async def stop_sound_coroutine(guild_id):
 @auth.login_required
 def upload_sound():
     if 'file' not in request.files:
+        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/upload Error: No file part", level="ERROR")
         return jsonify({'error': 'No file part'}), 400
 
     file = request.files['file']
 
     if file.filename == '':
+        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/upload Error: No filename", level="ERROR")
         return jsonify({'error': 'No selected file'}), 400
 
     if file and file.filename.endswith('.mp3'):
@@ -278,9 +299,11 @@ def upload_sound():
 
         sound_name = os.path.splitext(filename)[0]
         config.set(f"soundboard/sound_files/{sound_name}", filepath)
-
+        
+        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/upload {filename}")
         return jsonify({'message': 'File uploaded successfully'}), 200
     else:
+        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/upload Error: Invalid file type", level="ERROR")
         return jsonify({'error': 'Invalid file type'}), 400
 
 
@@ -289,11 +312,13 @@ def upload_sound():
 def set_volume():
     data = request.json
     volume = int(data.get('volume', 100))
-    if 0 < volume_level <= config.get()["soundboard"]["max_volume"]:
-        volume_level = volume / 100
-        config.set("soundboard/volume", volume_level)
+    if 0 < volume <= config.get()["soundboard"]["max_volume"]:
+        volume = volume / 100
+        config.set("soundboard/volume", volume)
+        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/volume {volume}%")
         return jsonify({"message": f"Volume set to {volume}%"})
     else: 
+        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/volume Error: Volume too high", level="ERROR")
         return jsonify({"message": "Volume cant be higher than " + str(config.get()["soundboard"]["max_volume"]) + "%"})
 
 
@@ -306,7 +331,9 @@ def get_language():
 
     if os.path.exists(lang_file):
         with open(lang_file, 'r') as f:
+            logger(f"{request.authorization.username}@WEBUI: GET /api/lang")
             return jsonify(json.load(f))
+    logger(f"{request.authorization.username}@WEBUI: GET /api/lang Error: Language file 404", level="ERROR")
     return jsonify({"error": "Language file not found"}), 404
 
 

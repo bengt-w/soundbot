@@ -167,3 +167,6 @@ config/
 sounds/
 # dont need that in the docker image: 
 .gitignore
+test.py
+logs/*
+.vscode
