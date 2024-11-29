@@ -18,12 +18,11 @@ def save_config(config):
 config = load_config()
 username = "watchdog"
 password = get_authcode(username)
-host = config['flask']['host']
-port = config['flask']['port']
+url = config['flask']['url']
 
 # API Credentials
 auth = HTTPBasicAuth(username, password)
-base_url = f'http://{host}:{port}/api/sounds'
+base_url = f'{url}/api/sounds'
 
 # Funktion zum Überprüfen, ob der Sound bereits registriert ist
 def is_sound_registered(name):

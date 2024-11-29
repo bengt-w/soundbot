@@ -163,6 +163,7 @@ cython_debug/
 
 # Make the token unleakable
 config/
+logs/
 # Don't leak my cringe test sounds
 sounds/
 

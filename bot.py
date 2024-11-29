@@ -19,7 +19,11 @@ try:
     from user_handler import validate_authcode, gen_authcode
     from log_handler import log as logger
 except ImportError:
-    os.system("pip3 install -r requirements.txt")
+    print("Please install the dependencies with:")
+    print("")
+    print("pip install -r requirements.txt")
+    print("")
+    print("And then restart the bot.")
 
 sounds_dir = config.get()["soundboard"]["sounds_dir"]
 
@@ -227,6 +231,25 @@ def bot_status():
         return jsonify({"status": True})
     else:
         return jsonify({"status": False})
+    
+@app.route('/api/servers', methods=['GET'])
+def get_servers():
+    servers = []
+    for guild in bot.guilds:
+        servers.append({"id": str(guild.id), "name": guild.name})
+    
+    print(servers)
+    return jsonify(servers)
+
+@app.route('/api/channels', methods=['POST'])
+def get_channels():
+    data = request.json
+    guild_id = int(data.get('guild_id').replace("MakeTheIntAStringPleaseIHateJavaScriptWhyCantYouDeclareVariableTypes", ""))
+    channels = []
+    guild = bot.get_guild(guild_id)
+    for channel in guild.voice_channels:
+        channels.append({"id": str(channel.id), "name": channel.name})
+    return jsonify(channels)
 
 
 async def leave_channel_coroutine(guild_id):
@@ -315,7 +338,7 @@ def set_volume():
     if 0 < volume <= config.get()["soundboard"]["max_volume"]:
         volume = volume / 100
         config.set("soundboard/volume", volume)
-        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/volume {volume}%")
+        logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/volume {volume*100}%")
         return jsonify({"message": f"Volume set to {volume}%"})
     else: 
         logger(f"{request.authorization.username}@WEBUI: POST /api/sounds/volume Error: Volume too high", level="ERROR")

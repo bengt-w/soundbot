@@ -1,279 +1,331 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Discord Soundboard</title>
     <script>
-        var status_connected = "";
-        var status_disconnected = "";
-        var status_err = "";
-        // Fetch sounds from the API and update the soundboard
-        async function fetchSounds() {
-            const res = await fetch('/api/sounds');
-            const sounds = await res.json();
-            const soundboard = document.getElementById('soundboard');
-            soundboard.innerHTML = '';
+      var status_connected = "";
+      var status_disconnected = "";
+      var status_err = "";
+      // Fetch sounds from the API and update the soundboard
+      async function fetchSounds() {
+          const res = await fetch('/api/sounds');
+          const sounds = await res.json();
+          const soundboard = document.getElementById('soundboard');
+          soundboard.innerHTML = '';
 
-            for (const name in sounds) {
-                const soundDiv = document.createElement('div');
-                soundDiv.innerHTML = `
-                    <strong>${name}</strong>
-                    <button onclick="playSound('${name}')">Play</button>
-                    <button onclick="deleteSound('${name}')">Delete</button>
-                    <button onclick="renameSound('${name}')">Rename</button>
-                `;
-                soundboard.appendChild(soundDiv);
+          for (const name in sounds) {
+              const soundDiv = document.createElement('div');
+              soundDiv.innerHTML = `
+                  <strong>${name}</strong>
+                  <button onclick="playSound('${name}')">Play</button>
+                  <button onclick="deleteSound('${name}')">Delete</button>
+                  <button onclick="renameSound('${name}')">Rename</button>
+              `;
+              soundboard.appendChild(soundDiv);
+          }
+      }
+
+      // Play a sound by sending a POST request
+      async function playSound(name) {
+          await fetch('/api/sounds/play', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name })
+          });
+          setTimeout(updateBotStatus, 250);
+      }
+
+      // Stop the sound by sending a POST request
+      async function stopSound() {
+          const guildId = document.getElementById('guildId').value || '';
+
+          await fetch('/api/sounds/stop', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ guild_id: guildId })
+          });
+      }
+
+      // Join the voice channel by sending a POST request
+      async function joinChannel() {
+          const guildId = document.getElementById('guildId').value || '';
+          const channelId = document.getElementById('channelId').value || '';
+
+          await fetch('/api/channel/join', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ guild_id: guildId, channel_id: channelId })
+          });
+      }
+
+      // Leave the voice channel by sending a POST request
+      async function leaveChannel() {
+          const guildId = document.getElementById('guildId').value || '';
+
+          await fetch('/api/channel/leave', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ guild_id: guildId })
+          });
+      }
+
+      // Save settings (Guild ID and Channel ID) by sending a POST request
+      async function saveSettings() {
+          const guildId = document.getElementById('guildId').value;
+          const channelId = document.getElementById('channelId').value;
+
+          if (guildId && channelId) {
+              await fetch('/api/settings', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ guild_id: guildId, channel_id: channelId })
+              });
+              alert('Settings saved.');
+              fetchSettings(); // Update the settings display after saving
+          } else {
+              alert('Please enter both Guild ID and Channel ID.');
+          }
+      }
+
+      // Fetch current settings (Guild ID and Channel ID) and update the input fields
+      async function fetchSettings() {
+          const res = await fetch('/api/settings');
+          const settings = await res.json();
+          document.getElementById('guildId').value = settings.guild_id;
+          document.getElementById('channelId').value = settings.channel_id;
+      }
+
+      // Gets the servers from the API and updates the dropdowns
+      async function fetchServers() {
+          const res =  await fetch('/api/servers');
+          const serverSelect = document.getElementById('guildId');
+          serverSelect.innerHTML = '';
+          const servers = await res.json();
+          servers.forEach(server => {
+              const option = document.createElement('option');
+              option.value = server.id;
+              option.textContent = server.name;
+              serverSelect.appendChild(option);
             }
+          );
         }
 
-        // Play a sound by sending a POST request
-        async function playSound(name) {
-            await fetch('/api/sounds/play', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
-            });
-            setTimeout(updateBotStatus, 250);
-        }
-
-        // Stop the sound by sending a POST request
-        async function stopSound() {
-            const guildId = document.getElementById('guildId').value || '';
-
-            await fetch('/api/sounds/stop', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guild_id: guildId })
-            });
-        }
-
-        // Join the voice channel by sending a POST request
-        async function joinChannel() {
-            const guildId = document.getElementById('guildId').value || '';
-            const channelId = document.getElementById('channelId').value || '';
-
-            await fetch('/api/channel/join', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guild_id: guildId, channel_id: channelId })
-            });
-        }
-
-        // Leave the voice channel by sending a POST request
-        async function leaveChannel() {
-            const guildId = document.getElementById('guildId').value || '';
-
-            await fetch('/api/channel/leave', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guild_id: guildId })
-            });
-        }
-
-        // Save settings (Guild ID and Channel ID) by sending a POST request
-        async function saveSettings() {
-            const guildId = document.getElementById('guildId').value;
-            const channelId = document.getElementById('channelId').value;
-
-            if (guildId && channelId) {
-                await fetch('/api/settings', {
+        async function fetchChannels() {
+            let guildId = document.getElementById('guildId').value || await fetch('/api/settings').then(res => res.json()).then(settings => settings.guild_id);
+            guildId = guildId + "MakeTheIntAStringPleaseIHateJavaScriptWhyCantYouDeclareVariableTypes";
+            const channelSelect = document.getElementById('channelId');
+            channelSelect.innerHTML = '';
+            const res = await fetch('/api/channels', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ guild_id: guildId, channel_id: channelId })
-                });
-                alert('Settings saved.');
-                fetchSettings(); // Update the settings display after saving
-            } else {
-                alert('Please enter both Guild ID and Channel ID.');
-            }
-        }
-
-        // Fetch current settings (Guild ID and Channel ID) and update the input fields
-        async function fetchSettings() {
-            const res = await fetch('/api/settings');
-            const settings = await res.json();
-            document.getElementById('guildId').value = settings.guild_id;
-            document.getElementById('channelId').value = settings.channel_id;
-        }
-
-        // Rename a sound by sending a POST request
-        async function renameSound(oldName) {
-            const newName = prompt('Enter new name for the sound:');
-            if (newName) {
-                await fetch('/api/sounds/rename', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ oldName, newName })
-                });
-                fetchSounds(); // Refresh the soundboard
-            }
-        }
-
-        // Delete a sound by sending a POST request
-        async function deleteSound(name) {
-            if (confirm('Are you sure you want to delete this sound?')) {
-                await fetch('/api/sounds/remove', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name })
-                });
-                fetchSounds(); // Refresh the soundboard
-            }
-        }
-        async function initUpload() {
-            document.getElementById('uploadForm').addEventListener('submit', async function (event) {
-                event.preventDefault();
-
-                const fileInput = document.getElementById('file');
-                const file = fileInput.files[0];
-
-                if (!file) {
-                    alert('Please select a file.');
-                    return;
+                    body: JSON.stringify({ guild_id: guildId })
                 }
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const res = await fetch('/api/sounds/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                updateBotStatus();
-                const result = await res.json();
-                const uploadStatus = document.getElementById('uploadStatus');
-
-                if (res.ok) {
-                    uploadStatus.textContent = 'File uploaded successfully!';
-                } else {
-                    uploadStatus.textContent = `Upload failed: ${result.error}`;
-                }
+            );
+            const channels = await res.json();
+            channels.forEach(channel => {
+                const option = document.createElement('option');
+                option.value = channel.id;
+                option.textContent = channel.name;
+                channelSelect.appendChild(option);
             });
         }
+            
 
-        function updateVolume(value) {
-            const volumeLabel = document.getElementById('volumeLabel');
-            volumeLabel.textContent = `${value}%`;
+      // Rename a sound by sending a POST request
+      async function renameSound(oldName) {
+          const newName = prompt('Enter new name for the sound:');
+          if (newName) {
+              await fetch('/api/sounds/rename', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ oldName, newName })
+              });
+              fetchSounds(); // Refresh the soundboard
+          }
+      }
 
-            // Send the new volume to the server
-            fetch('/api/sounds/volume', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ volume: value })
-            });
-        }
+      // Delete a sound by sending a POST request
+      async function deleteSound(name) {
+          if (confirm('Are you sure you want to delete this sound?')) {
+              await fetch('/api/sounds/remove', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name })
+              });
+              fetchSounds(); // Refresh the soundboard
+          }
+      }
+      async function initUpload() {
+          document.getElementById('uploadForm').addEventListener('submit', async function (event) {
+              event.preventDefault();
 
-        function setElementText(id, text) {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = text;
-            }
-        }
+              const fileInput = document.getElementById('file');
+              const file = fileInput.files[0];
 
-        async function fetchLanguage() {
-            try {
-                const res = await fetch('/api/lang');
-                const langData = await res.json();
-                
-                // Zuordnung der Texte zu den entsprechenden Elementen
-                status_connected = langData.status_connected;
-                status_disconnected = langData.status_disconnected;
-                status_err = langData.status_error;
-                setElementText('channelSettingsLabel', langData.channel_settings);
-                setElementText('guildIdLabel', langData.guild_id);
-                setElementText('channelIdLabel', langData.channel_id);
-                setElementText('saveSettingsButton', langData.save_settings);
-                setElementText('joinChannelButton', langData.join_channel);
-                setElementText('leaveChannelButton', langData.leave_channel);
-                setElementText('stopSoundButton', langData.stop_sound);
-                setElementText('uploadSoundLabel', langData.upload_sound);
-                setElementText('volumeControlLabel', langData.volume_control);
-                setElementText('botStatusLabel', langData.bot_status);
-                setElementText('updateStatusButton', langData.update_status);
-            } catch (error) {
-                console.error('Failed to get Language from API: ', error);
-            }
-        }
+              if (!file) {
+                  alert('Please select a file.');
+                  return;
+              }
 
-        // Funktion, um den Verbindungsstatus des Bots zu aktualisieren
-        function updateBotStatus() {
-            fetch('/api/bot/status').then(response => response.json()).then(data => {if(data.status){
-                const statusLabel = document.getElementById('botStatusLabel');
-                statusLabel.textContent = data.status ? status_connected : status_disconnected;
-                statusLabel.style.color = data.status ? "green" : "red";
-            } else if (!data.status) {
-                const statusLabel = document.getElementById('botStatusLabel');
-                statusLabel.textContent = status_disconnected;
-                statusLabel.style.color = "red";
-            } else{
-                const statusLabel = document.getElementById('botStatusLabel');
-                statusLabel.textContent = status_err;
-                statusLabel.style.color = "orange";
-            }});
-        }
+              const formData = new FormData();
+              formData.append('file', file);
 
-        function init() {
-            initUpload();
-            fetchLanguage();
-            updateBotStatus();
-            fetchSettings();
-            fetchSounds();
-            document.getElementById("volumeLabel").innerHTML = document.getElementById("volumeControl").value + "%"
-            setInterval(updateBotStatus, 1000);
-        }
+              const res = await fetch('/api/sounds/upload', {
+                  method: 'POST',
+                  body: formData
+              });
+              updateBotStatus();
+              const result = await res.json();
+              const uploadStatus = document.getElementById('uploadStatus');
+
+              if (res.ok) {
+                  uploadStatus.textContent = 'File uploaded successfully!';
+              } else {
+                  uploadStatus.textContent = `Upload failed: ${result.error}`;
+              }
+              await fetchSounds();
+          });
+      }
+
+      function updateVolume(value) {
+          const volumeLabel = document.getElementById('volumeLabel');
+          volumeLabel.textContent = `${value}%`;
+
+          // Send the new volume to the server
+          fetch('/api/sounds/volume', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ volume: value })
+          });
+      }
+
+      function setElementText(id, text) {
+          const element = document.getElementById(id);
+          if (element) {
+              element.textContent = text;
+          }
+      }
+
+      async function fetchLanguage() {
+          try {
+              const res = await fetch('/api/lang');
+              const langData = await res.json();
+
+              // Zuordnung der Texte zu den entsprechenden Elementen
+              status_connected = langData.status_connected;
+              status_disconnected = langData.status_disconnected;
+              status_err = langData.status_error;
+              setElementText('channelSettingsLabel', langData.channel_settings);
+              setElementText('guildIdLabel', langData.guild_id);
+              setElementText('channelIdLabel', langData.channel_id);
+              setElementText('saveSettingsButton', langData.save_settings);
+              setElementText('joinChannelButton', langData.join_channel);
+              setElementText('leaveChannelButton', langData.leave_channel);
+              setElementText('stopSoundButton', langData.stop_sound);
+              setElementText('uploadSoundLabel', langData.upload_sound);
+              setElementText('volumeControlLabel', langData.volume_control);
+              setElementText('botStatusLabel', langData.bot_status);
+              setElementText('updateStatusButton', langData.update_status);
+          } catch (error) {
+              console.error('Failed to get Language from API: ', error);
+          }
+      }
+
+      // Funktion, um den Verbindungsstatus des Bots zu aktualisieren
+      function updateBotStatus() {
+          fetch('/api/bot/status').then(response => response.json()).then(data => {if(data.status){
+              const statusLabel = document.getElementById('botStatusLabel');
+              statusLabel.textContent = data.status ? status_connected : status_disconnected;
+              statusLabel.style.color = data.status ? "green" : "red";
+          } else if (!data.status) {
+              const statusLabel = document.getElementById('botStatusLabel');
+              statusLabel.textContent = status_disconnected;
+              statusLabel.style.color = "red";
+          } else{
+              const statusLabel = document.getElementById('botStatusLabel');
+              statusLabel.textContent = status_err;
+              statusLabel.style.color = "orange";
+          }});
+      }
+
+      function init() {
+          fetchServers();
+          fetchSettings();
+          fetchChannels();
+          initUpload();
+          fetchLanguage();
+          updateBotStatus();
+          fetchSounds();
+          setTimeout(() => fetchSettings(), 45);
+          document.getElementById("volumeLabel").innerHTML = document.getElementById("volumeControl").value + "%"
+          setInterval(updateBotStatus, 1000);
+      }
     </script>
-</head>
+  </head>
 
-<body>
+  <body>
     <h1 id="title"></h1>
 
     <div id="channelSettings">
-        <h2 id="channelSettingsLabel"></h2>
-        <label id="guildIdLabel" for="guildId"></label>
-        <input type="text" id="guildId" placeholder="Enter Guild ID">
-        <br>
-        <label id="channelIdLabel" for="channelId"></label>
-        <input type="text" id="channelId" placeholder="Enter Channel ID">
-        <br>
-        <button id="saveSettingsButton" onclick="saveSettings()"></button>
+      <h2 id="channelSettingsLabel"></h2>
+      <label id="guildIdLabel" for="guildId"></label>
+      <select id="guildId" onchange="fetchChannels()">
+        
+      </select>
+      <br />
+      <label id="channelIdLabel" for="channelId"></label>
+      <select id="channelId" onchange="saveSettings()">
+
+      </select>
     </div>
 
     <div>
-        <button id="joinChannelButton" onclick="joinChannel()"></button>
-        <button id="leaveChannelButton" onclick="leaveChannel()"></button>
-        <button id="stopSoundButton" onclick="stopSound()"></button>
+      <button id="joinChannelButton" onclick="joinChannel()"></button>
+      <button id="leaveChannelButton" onclick="leaveChannel()"></button>
+      <button id="stopSoundButton" onclick="stopSound()"></button>
     </div>
 
     <div>
-        <h2 id="botStatusLabel"></h2>
+      <h2 id="botStatusLabel"></h2>
 
-        <button id="updateStatusButton" onclick="updateBotStatus(); initUpload();"></button>
+      <button
+        id="updateStatusButton"
+        onclick="updateBotStatus(); initUpload();"
+      ></button>
     </div>
 
     <div>
-        <h2 id="volumeControlLabel"></h2>
-        <input type="range" id="volumeControl" min="0" max="500" value="100" oninput="updateVolume(this.value)">
-        <span id="volumeLabel">100%</span>
+      <h2 id="volumeControlLabel"></h2>
+      <input
+        type="range"
+        id="volumeControl"
+        min="0"
+        max="500"
+        value="100"
+        oninput="updateVolume(this.value)"
+      />
+      <span id="volumeLabel">100%</span>
     </div>
 
     <div>
-        <h2 id="uploadSoundLabel"></h2>
-        <form id="uploadForm" enctype="multipart/form-data">
-            <label for="file">Select Sound File:</label>
-            <input type="file" id="file" name="file" accept=".mp3" required>
-            <br>
-            <button type="submit">Upload</button>
-        </form>
-        <div id="uploadStatus"></div>
+      <h2 id="uploadSoundLabel"></h2>
+      <form id="uploadForm" enctype="multipart/form-data">
+        <label for="file">Select Sound File:</label>
+        <input type="file" id="file" name="file" accept=".mp3" required />
+        <br />
+        <button type="submit">Upload</button>
+      </form>
+      <div id="uploadStatus"></div>
     </div>
 
     <div id="soundboard">
-        <h2 id="availableSounds"></h2>
-        <!-- Soundboard items will be inserted here -->
+      <h2 id="availableSounds"></h2>
+      <!-- Soundboard items will be inserted here -->
     </div>
-    <script>init();</script>
-</body>
-
+    <script>
+      init();
+    </script>
+  </body>
 </html>
