@@ -3,7 +3,8 @@
     "commands": {
         "play": {
             "success": "Sound $(1) wird abgespielt.",
-            "404": "Sound $(1) wurde nicht gefunden."
+            "404": "Sound $(1) wurde nicht gefunden.",
+            "queued": "$(1) wurde zur Warteschlange hinzugefügt."
         },
         "join": {
             "success": "Joined <#$(1)> successfully.",

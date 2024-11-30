@@ -161,6 +161,12 @@ def play_sound():
     name = data.get('name')
     if name in config.get()["soundboard"]["sound_files"]:
         guild_id = config.get()["soundboard"]["guild_id"]
+        if bot.get_guild(int(guild_id)).voice_client.is_playing():
+            queue = config.get()["soundboard"]["queue"]
+            queue.append(name)
+            config.set("soundboard/queue", queue)
+            logger(f"/api/sounds/play {name} (queued)", user=request.authorization.username, method="POST")
+            return jsonify({"message": "Sound added to queue."})
         logger(f"/api/sounds/play {name}",
                user=request.authorization.username, method="POST")
         asyncio.run_coroutine_threadsafe(
@@ -175,19 +181,23 @@ def play_sound():
 async def play_sound_coroutine(guild_id, sound_name):
     guild = bot.get_guild(int(guild_id))
     if guild and guild.voice_client:
-        def loop_starter(error=None):
+        def loop_n_queue_starter(error=None):
             asyncio.run_coroutine_threadsafe(loop(guild_id), bot.loop)
             
         source = discord.FFmpegPCMAudio(
             config.get()["soundboard"]["sound_files"][sound_name],
             options=f'-filter:a "volume={config.get()["soundboard"]["volume"]}"'
         )
-        guild.voice_client.play(source, after=loop_starter)
+        guild.voice_client.play(source, after=loop_n_queue_starter)
 
     
 async def loop(guild_id):
     if config.get()["soundboard"]["loop"] != "":
         await play_sound_coroutine(guild_id, config.get()["soundboard"]["loop"])
+    elif config.get()["soundboard"]["queue"] != []:
+        await play_sound_coroutine(guild_id, config.get()["soundboard"]["queue"][0])
+        config.set("soundboard/queue", config.get()["soundboard"]["queue"][1:])
+        pass
 
 @app.route('/api/channel/join', methods=['POST'])
 @auth.login_required
@@ -254,8 +264,6 @@ def get_servers():
     servers = []
     for guild in bot.guilds:
         servers.append({"id": str(guild.id), "name": guild.name})
-
-    print(servers)
     return jsonify(servers)
 
 
@@ -471,6 +479,13 @@ async def play(interaction: discord.Interaction, sound_name: str):
     logger(f"commands.play {sound_name}",
            user=interaction.user.name, location=interaction.guild.id)
     guild_id = interaction.guild.id
+    if interaction.guild.voice_client.is_playing():
+        queue = config.get()["soundboard"]["queue"]
+        queue.append(sound_name)
+        config.set("soundboard/queue", queue)
+        logger(f"commands.play {sound_name} (queued)", location=interaction.guild.id, user=interaction.user.name)
+        await interaction.response.send_message(lang_manager("commands.play.queued", sound_name))
+        return
     try:
         await play_sound_coroutine(guild_id, sound_name)
     except Exception as e:
