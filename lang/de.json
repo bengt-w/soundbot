@@ -16,6 +16,9 @@
         "list": {
             "title": "Verfügbare Sounds:"
         }, 
+        "queue": {
+            "title": "Sounds in der Warteschlange:"
+        }, 
         "stop": {
             "success": "Sounds gestoppt."
         },

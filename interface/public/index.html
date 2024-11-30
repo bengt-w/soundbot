@@ -78,6 +78,7 @@
     </style>
     <title>Discord Soundboard</title>
     <script>
+      var lang = "";
       var status_connected = "";
       var status_disconnected = "";
       var status_err = "";
@@ -91,10 +92,10 @@
         for (const name in sounds) {
           const soundDiv = document.createElement("div");
           soundDiv.innerHTML = `
-          <button class="actionButton" onclick="playSound('${name}')">▶️</button>
-          <button class="actionButton" onclick="deleteSound('${name}')">🗑️</button>
-          <button class="actionButton" onclick="renameSound('${name}')">🏷️</button>
-          <button class="actionButton" onclick="loopSound('${name}')">🔁</button>
+          <button title="Play" class="actionButton" onclick="playSound('${name}')">▶️</button>
+          <button title="Delete" class="actionButton" onclick="deleteSound('${name}')">🗑️</button>
+          <button title="Rename" class="actionButton" onclick="renameSound('${name}')">🏷️</button>
+          <button title="Loop" style="opacity: 0.5" class="actionButton loopButton" onclick="loopSound('${name}')">🔁</button>
           <strong class="soundName">${name}</strong>
               `;
           soundboard.appendChild(soundDiv);
@@ -114,6 +115,12 @@
       // Stop the sound by sending a POST request
       async function stopSound() {
         const guildId = document.getElementById("guildId").value || "";
+        const buttons = document.querySelectorAll('.loopButton');
+
+        buttons.forEach(button => {
+            button.style.opacity = "0.5";
+          }
+        );
 
         await fetch("/api/sounds/stop", {
           method: "POST",
@@ -135,6 +142,21 @@
       }
 
       async function loopSound(name) {
+        const buttons = document.querySelectorAll('.loopButton');
+        let targetButton = null;
+        
+        buttons.forEach(button => {
+          button.style.opacity = "0.5";
+          if (button.getAttribute('onclick') === "loopSound('" + name + "')") {
+                  targetButton = button;
+                }
+          }
+        );
+              
+        if (targetButton) {
+          targetButton.style.opacity = "1";
+        } 
+              
         await fetch("/api/sounds/loop", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -312,6 +334,7 @@
           status_disconnected = langData.status_disconnected;
           status_err = langData.status_error;
           document.title = langData.title;
+          lang = langData.lang;
           setElementText("title", langData.title);
           setElementText("channelSettingsLabel", langData.channel_settings);
           setElementText("guildIdLabel", langData.guild_id);
@@ -349,8 +372,42 @@
               statusLabel.textContent = status_err;
               statusLabel.style.color = "orange";
             }
+            if (data.guild_id != document.getElementById("guildId").value) {
+              document.getElementById("guildId").value = data.guild_id;
+              fetchChannels()
+            }
+            if (data.channel_id != document.getElementById("channelId").value) {
+              document.getElementById("channelId").value = data.channel_id;
+            }
+            if (data.lang != lang) {
+              fetchLanguage();
+            }
+            document.getElementById("volumeControl").value = data.volume*100;
+            document.getElementById("volumeLabel").textContent = Math.round(data.volume*100) + "%";
+            if(document.querySelectorAll(".soundName").length != data.sound_count) {
+              fetchSounds();
+            }
+            const buttons = document.querySelectorAll('.loopButton');
+            let targetButton = null;
+
+            buttons.forEach(button => {
+              button.style.opacity = "0.5";
+              if (button.getAttribute('onclick') === "loopSound('" + data.loop + "')") {
+                      targetButton = button;
+                    }
+              }
+            );
+
+            if (targetButton) {
+              targetButton.style.opacity = "1";
+            } 
+          })
+          .catch((error) => {
+            console.error("Failed to get Bot Status from API: ", error);
           });
       }
+
+
 
       function fetchVolume() {
         const res = fetch("/api/sounds/volume");

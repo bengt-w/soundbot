@@ -16,6 +16,9 @@
         "list": {
             "title": "Available Sounds:"
         }, 
+        "queue": {
+            "title": "Sounds in queue:"
+        }, 
         "stop": {
             "success": "Stopped playing sounds."
         },

@@ -6,7 +6,7 @@
     "save_settings": "Save Settings",
     "join_channel": "Join Channel",
     "leave_channel": "Leave Channel",
-    "stop_sound": "Stop Sound",
+    "stop_sound": "Stop Sound/Loop",
     "upload_sound": "Upload Sound",
     "volume_control": "Volume Control",
     "bot_status": "Bot Status",
@@ -14,5 +14,6 @@
     "available_sounds": "Available Sounds",
     "status_disconnected": "Disconnected",
     "status_connected": "Connected", 
-    "status_error": "ERROR!"
+    "status_error": "ERROR!",
+    "lang": "en"
 }

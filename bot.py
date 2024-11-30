@@ -134,6 +134,10 @@ def remove_sound():
            user=request.authorization.username, method="POST")
     if name in config.get()["soundboard"]["sound_files"]:
         config.remove(f"soundboard/sound_files/{name}")
+        try:
+            os.remove(config.get()["soundboard"]["sound_files"][name])
+        except Exception as e:
+            print(e)
         return jsonify({"message": "Sound removed."})
     return jsonify({"message": "Sound not found."}), 404
 
@@ -165,7 +169,8 @@ def play_sound():
             queue = config.get()["soundboard"]["queue"]
             queue.append(name)
             config.set("soundboard/queue", queue)
-            logger(f"/api/sounds/play {name} (queued)", user=request.authorization.username, method="POST")
+            logger(f"/api/sounds/play {name} (queued)",
+                   user=request.authorization.username, method="POST")
             return jsonify({"message": "Sound added to queue."})
         logger(f"/api/sounds/play {name}",
                user=request.authorization.username, method="POST")
@@ -183,14 +188,14 @@ async def play_sound_coroutine(guild_id, sound_name):
     if guild and guild.voice_client:
         def loop_n_queue_starter(error=None):
             asyncio.run_coroutine_threadsafe(loop(guild_id), bot.loop)
-            
+
         source = discord.FFmpegPCMAudio(
             config.get()["soundboard"]["sound_files"][sound_name],
             options=f'-filter:a "volume={config.get()["soundboard"]["volume"]}"'
         )
         guild.voice_client.play(source, after=loop_n_queue_starter)
 
-    
+
 async def loop(guild_id):
     if config.get()["soundboard"]["loop"] != "":
         await play_sound_coroutine(guild_id, config.get()["soundboard"]["loop"])
@@ -198,6 +203,7 @@ async def loop(guild_id):
         await play_sound_coroutine(guild_id, config.get()["soundboard"]["queue"][0])
         config.set("soundboard/queue", config.get()["soundboard"]["queue"][1:])
         pass
+
 
 @app.route('/api/channel/join', methods=['POST'])
 @auth.login_required
@@ -251,11 +257,20 @@ def leave_channel_api():
 @app.route('/api/bot/status', methods=['GET'])
 @auth.login_required
 def bot_status():
+    current_config = config.get()
     guild = bot.get_guild(int(config.get()["soundboard"]["guild_id"]))
+    status = False
     if guild and guild.voice_client and guild.voice_client.is_connected():
-        return jsonify({"status": True})
-    else:
-        return jsonify({"status": False})
+        status = True
+    return jsonify({"status": status,
+                    "volume": current_config["soundboard"]["volume"],
+                    "sound_count": len(current_config["soundboard"]["sound_files"]),
+                    "queue": current_config["soundboard"]["queue"],
+                    "loop": current_config["soundboard"]["loop"],
+                    "guild_id": current_config["soundboard"]["guild_id"],
+                    "channel_id": current_config["soundboard"]["channel_id"],
+                    "lang": current_config["lang"]
+                    })
 
 
 @app.route('/api/servers', methods=['GET'])
@@ -331,14 +346,18 @@ async def stop_sound_coroutine(guild_id):
         guild.voice_client.stop()
         print(f"Stopped sound in channel for guild {guild_id}")
 
+
 @app.route('/api/sounds/loop', methods=['POST'])
 @auth.login_required
 def loop_sound():
     data = request.json
     config.set("soundboard/loop", data.get("sound"))
-    asyncio.run_coroutine_threadsafe(play_sound_coroutine(config.get()["soundboard"]["guild_id"], data.get("sound")), bot.loop)
-    logger(f"/api/sounds/loop {data.get("sound")}", user=request.authorization.username, method="POST")
+    asyncio.run_coroutine_threadsafe(play_sound_coroutine(
+        config.get()["soundboard"]["guild_id"], data.get("sound")), bot.loop)
+    logger(f"/api/sounds/loop {data.get("sound")}",
+           user=request.authorization.username, method="POST")
     return jsonify({"message": "success"})
+
 
 @app.route('/api/sounds/upload', methods=['POST'])
 @auth.login_required
@@ -379,7 +398,7 @@ def set_volume():
     data = request.json
     volume = int(data.get('volume', 100))
     try:
-        if 0 < volume <= config.get()["soundboard"]["max_volume"]:
+        if 0 <= volume <= config.get()["soundboard"]["max_volume"]:
             volume = volume / 100
             config.set("soundboard/volume", volume)
             logger(f"/api/sounds/volume {volume*100}",
@@ -455,12 +474,16 @@ async def login_code(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
+
 @bot.tree.command(name='loop', description="Loops a provided sound.")
 async def loop_cmd(interaction: discord.Interaction, sound_name: str):
     config.set("soundboard/loop", sound_name)
     await interaction.response.send_message(lang_manager("commands.loop.success", sound_name))
-    asyncio.run_coroutine_threadsafe(play_sound_coroutine(interaction.guild.id, sound_name), bot.loop)
-    logger(f"commands.loop {sound_name}", user=interaction.user.id, location=interaction.guild.id)
+    asyncio.run_coroutine_threadsafe(play_sound_coroutine(
+        interaction.guild.id, sound_name), bot.loop)
+    logger(f"commands.loop {sound_name}",
+           user=interaction.user.id, location=interaction.guild.id)
+
 
 @loop_cmd.autocomplete('sound_name')
 async def loop_cmd_autocomlete(interaction: discord.Interaction, current: str):
@@ -474,6 +497,7 @@ async def loop_cmd_autocomlete(interaction: discord.Interaction, current: str):
     else:
         return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered]
 
+
 @bot.tree.command(name='play', description="Plays a provided sound.")
 async def play(interaction: discord.Interaction, sound_name: str):
     logger(f"commands.play {sound_name}",
@@ -483,7 +507,8 @@ async def play(interaction: discord.Interaction, sound_name: str):
         queue = config.get()["soundboard"]["queue"]
         queue.append(sound_name)
         config.set("soundboard/queue", queue)
-        logger(f"commands.play {sound_name} (queued)", location=interaction.guild.id, user=interaction.user.name)
+        logger(f"commands.play {sound_name} (queued)",
+               location=interaction.guild.id, user=interaction.user.name)
         await interaction.response.send_message(lang_manager("commands.play.queued", sound_name))
         return
     try:
@@ -494,6 +519,7 @@ async def play(interaction: discord.Interaction, sound_name: str):
         await interaction.response.send_message(lang_manager("commands.play.404", sound_name), ephemeral=True)
         return
     await interaction.response.send_message(lang_manager("commands.play.success", sound_name))
+
 
 @play.autocomplete('sound_name')
 async def play_cmd_autocomplete(interaction: discord.Interaction, current: str):
@@ -594,6 +620,19 @@ async def list(interaction: discord.Interaction):
     sound_names = config.get()["soundboard"]["sound_files"].keys()
     embed = discord.Embed(title=lang_manager(
         "commands.list.title"), color=discord.Color.blue())
+
+    embed.description = "\n".join(sound_names)
+
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name='queue', description="Lists all sounds in the queue.")
+async def list_queue(interaction: discord.Interaction, action: str = None):
+    logger(f"commands.queue", location=interaction.guild.id,
+           user=interaction.user.name)
+    sound_names = config.get()["soundboard"]["queue"]
+    embed = discord.Embed(title=lang_manager(
+        "commands.queue.title"), color=discord.Color.blue())
 
     embed.description = "\n".join(sound_names)
 

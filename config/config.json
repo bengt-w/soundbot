@@ -23,5 +23,6 @@
     },
     "lang": "en",
     "lang_dir": "lang",
-    "interface_lang_dir": "./interface/lang/"
+    "interface_lang_dir": "./interface/lang/",
+    "CONFIG_FILE": "config/config.json"
 }
