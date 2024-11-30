@@ -225,6 +225,7 @@ def leave_channel_api():
 
 
 @app.route('/api/bot/status', methods=['GET'])
+@auth.login_required
 def bot_status():
     guild = bot.get_guild(int(config.get()["soundboard"]["guild_id"]))
     if guild and guild.voice_client and guild.voice_client.is_connected():
@@ -233,6 +234,7 @@ def bot_status():
         return jsonify({"status": False})
     
 @app.route('/api/servers', methods=['GET'])
+@auth.login_required
 def get_servers():
     servers = []
     for guild in bot.guilds:
@@ -242,6 +244,7 @@ def get_servers():
     return jsonify(servers)
 
 @app.route('/api/channels', methods=['POST'])
+@auth.login_required
 def get_channels():
     data = request.json
     guild_id = int(data.get('guild_id').replace("MakeTheIntAStringPleaseIHateJavaScriptWhyCantYouDeclareVariableTypes", ""))
@@ -277,6 +280,7 @@ def update_settings():
 
 
 @app.route('/api/settings', methods=['GET'])
+@auth.login_required
 def get_settings():
     logger(f"{request.authorization.username}@WEBUI: GET /api/settings")
     return jsonify({
