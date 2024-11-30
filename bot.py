@@ -319,13 +319,15 @@ async def stop_sound_coroutine(guild_id):
 @auth.login_required
 def upload_sound():
     if 'file' not in request.files:
-        logger("/api/sounds/upload Error: No file part", user=request.authorization.username, method="POST", level="ERROR")
+        logger("/api/sounds/upload Error: No file part",
+               user=request.authorization.username, method="POST", level="ERROR")
         return jsonify({'error': 'No file part'}), 400
 
     file = request.files['file']
 
     if file.filename == '':
-        logger("/api/sounds/upload Error: No filename", user=request.authorization.username, method="POST", level="ERROR")
+        logger("/api/sounds/upload Error: No filename",
+               user=request.authorization.username, method="POST", level="ERROR")
         return jsonify({'error': 'No selected file'}), 400
 
     if file and file.filename.endswith('.mp3'):
@@ -337,26 +339,42 @@ def upload_sound():
         sound_name = os.path.splitext(filename)[0]
         config.set(f"soundboard/sound_files/{sound_name}", filepath)
 
-        logger(f"/api/sounds/upload {filename}", user=request.authorization.username, method="POST")
+        logger(f"/api/sounds/upload {filename}",
+               user=request.authorization.username, method="POST")
         return jsonify({'message': 'File uploaded successfully'}), 200
     else:
-        logger("/api/sounds/upload Error: Invalid file type", user=request.authorization.username, method="POST", level="ERROR")
+        logger("/api/sounds/upload Error: Invalid file type",
+               user=request.authorization.username, method="POST", level="ERROR")
         return jsonify({'error': 'Invalid file type'}), 400
-    
+
 
 @app.route('/api/sounds/volume', methods=['POST'])
 @auth.login_required
 def set_volume():
     data = request.json
     volume = int(data.get('volume', 100))
-    if 0 < volume <= config.get()["soundboard"]["max_volume"]:
-        volume = volume / 100
-        config.set("soundboard/volume", volume)
-        logger(f"/api/sounds/volume {volume*100}", user=request.authorization.username, method="POST")
-        return jsonify({"message": f"Volume set to {volume}%"})
-    else:
-        logger(f"/api/sounds/volume {volume*100}%>{config.get()['soundboard']['max_volume']}%", user=request.authorization.username, method="POST", level="ERROR")
-        return jsonify({"message": "Volume cant be higher than " + str(config.get()["soundboard"]["max_volume"]) + "%"})
+    try:
+        if 0 < volume <= config.get()["soundboard"]["max_volume"]:
+            volume = volume / 100
+            config.set("soundboard/volume", volume)
+            logger(f"/api/sounds/volume {volume*100}",
+                   user=request.authorization.username, method="POST")
+            return jsonify({"message": f"Volume set to {volume}%"})
+        else:
+            logger(f"/api/sounds/volume {volume*100}%>{config.get()['soundboard']['max_volume']}%",
+                   user=request.authorization.username, method="POST", level="ERROR")
+            return jsonify({"message": "Volume cant be higher than " + str(config.get()["soundboard"]["max_volume"]) + "%"})
+    except Exception as e:
+        pass
+
+
+@app.route('/api/sounds/volume', methods=['GET'])
+@auth.login_required
+def get_volume():
+    volume = config.get()["soundboard"]["volume"]
+    max_volume = config.get()["soundboard"]["max_volume"]
+    logger(f"/api/sounds/volume", user=request.authorization.username, method="GET")
+    return jsonify({"volume": volume*100, "max": max_volume})
 
 
 @app.route('/api/lang', methods=['GET'])
@@ -370,7 +388,8 @@ def get_language():
         with open(lang_file, 'r') as f:
             logger("/api/lang", user=request.authorization.username, method="GET")
             return jsonify(json.load(f))
-    logger("/api/lang Language file not found", user=request.authorization.username, method="GET", level="ERROR")
+    logger("/api/lang Language file not found",
+           user=request.authorization.username, method="GET", level="ERROR")
     return jsonify({"error": "Language file not found"}), 404
 
 
@@ -414,12 +433,14 @@ async def login_code(interaction: discord.Interaction):
 
 @bot.tree.command(name='play', description="Plays a provided sound.")
 async def play(interaction: discord.Interaction, sound_name: str):
-    logger(f"commands.play {sound_name}", user=interaction.user.name, location=interaction.guild.id)
+    logger(f"commands.play {sound_name}",
+           user=interaction.user.name, location=interaction.guild.id)
     guild_id = interaction.guild.id
     try:
         await play_sound_coroutine(guild_id, sound_name)
     except Exception as e:
-        logger(f"commands.play Error: {e}", level="ERROR", location=interaction.guild.id, user=interaction.user.name)
+        logger(f"commands.play Error: {e}", level="ERROR",
+               location=interaction.guild.id, user=interaction.user.name)
         await interaction.response.send_message(lang_manager("commands.play.404", sound_name), ephemeral=True)
         return
     await interaction.response.send_message(lang_manager("commands.play.success", sound_name))
@@ -440,9 +461,11 @@ async def play_cmd_autocomplete(interaction: discord.Interaction, current: str):
 
 @bot.tree.command(name="add_sound", description="Upload an MP3 file to save it to the sounds directory.")
 async def add_sound_cmd(interaction: discord.Interaction, file: discord.Attachment):
-    logger(f"commands.add_sound {file.filename}", user=interaction.user.name, location=interaction.guild.id)
+    logger(f"commands.add_sound {file.filename}",
+           user=interaction.user.name, location=interaction.guild.id)
     if not file.filename.lower().endswith('.mp3'):
-        logger(f"commands.add_sound Error: File was not an mp3 file: {file.filename}", level="ERROR", location=interaction.guild.id, user=interaction.user.name)
+        logger(f"commands.add_sound Error: File was not an mp3 file: {file.filename}",
+               level="ERROR", location=interaction.guild.id, user=interaction.user.name)
         await interaction.response.send_message(lang_manager("commands.add.fileformat"), ephemeral=True)
         return
 
@@ -452,13 +475,15 @@ async def add_sound_cmd(interaction: discord.Interaction, file: discord.Attachme
         await file.save(file_path)
         await interaction.response.send_message(lang_manager("commands.add.success", file.filename))
     except Exception as e:
-        logger(f"commands.add_sound Error: {e}", level="ERROR", location=interaction.guild.id, user=interaction.user.name)
+        logger(f"commands.add_sound Error: {e}", level="ERROR",
+               location=interaction.guild.id, user=interaction.user.name)
         await interaction.response.send_message(lang_manager("commands.add.error", e), ephemeral=True)
 
 
 @bot.tree.command(name='stop', description="Stops the current sound.")
 async def stop(interaction: discord.Interaction):
-    logger("commands.stop", user=interaction.user.name, location=interaction.guild.id)
+    logger("commands.stop", user=interaction.user.name,
+           location=interaction.guild.id)
     guild_id = interaction.guild.id
     await stop_sound_coroutine(guild_id)
     await interaction.response.send_message(lang_manager("commands.stop.success"))
@@ -466,13 +491,15 @@ async def stop(interaction: discord.Interaction):
 
 @bot.tree.command(name='volume', description="Sets the volume in %")
 async def set_volume_cmd(interaction: discord.Interaction, new_volume_level: int = 100):
-    logger(f"commands.volume {new_volume_level}", user=interaction.user.name, location=interaction.guild.id)
+    logger(f"commands.volume {new_volume_level}",
+           user=interaction.user.name, location=interaction.guild.id)
     if (0 < new_volume_level <= config.get()["soundboard"]["max_volume"]):
         config.set("soundboard/volume", new_volume_level / 100)
         await interaction.response.send_message(lang_manager("commands.volume.success", config.get()["soundboard"]["volume"] * 100))
     else:
         await interaction.response.send_message(lang_manager("commands.volume.max", config.get()["soundboard"]["max_volume"]))
-        logger(f"commands.volume Error: {new_volume_level}>{config.get()['soundboard']['max_volume']}", level="ERROR", location=interaction.guild.id, user=interaction.user.name)
+        logger(f"commands.volume Error: {new_volume_level}>{config.get()['soundboard']['max_volume']}",
+               level="ERROR", location=interaction.guild.id, user=interaction.user.name)
 
 
 @bot.tree.command(name='join', description="Joins the provided channelid/Your channel")
@@ -485,7 +512,8 @@ async def join(interaction: discord.Interaction, channel_id: str = None):
             await interaction.response.send_message(lang_manager("commands.join.success", channel_id))
             await play_sound_coroutine(guild_id, "join")
         except Exception as e:
-            logger(f"commands.join Error: {e}", level="ERROR", location=interaction.guild.id, user=interaction.user.name)
+            logger(f"commands.join Error: {e}", level="ERROR",
+                   location=interaction.guild.id, user=interaction.user.name)
             print(f"An error occurred: {e}")
 
     else:
@@ -493,10 +521,12 @@ async def join(interaction: discord.Interaction, channel_id: str = None):
             channel = interaction.user.voice.channel
             await channel.connect()
             await interaction.response.send_message(lang_manager("commands.join.success", channel.id))
-            logger(f"commands.join {channel.id}", location=interaction.guild.id, user=interaction.user.name)
+            logger(f"commands.join {channel.id}",
+                   location=interaction.guild.id, user=interaction.user.name)
         else:
             await interaction.response.send_message(lang_manager("commands.join.no_nothing"), ephemeral=True)
-            logger(f"commands.join Error: No channel id nor user is in channel", level="ERROR", location=interaction.guild.id, user=interaction.user.name)
+            logger(f"commands.join Error: No channel id nor user is in channel",
+                   level="ERROR", location=interaction.guild.id, user=interaction.user.name)
 
 
 @bot.tree.command(name='leave', description="Disconnects the bot from the current voice channel.")
@@ -504,12 +534,14 @@ async def leave(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     await leave_channel_coroutine(guild_id)
     await interaction.response.send_message(lang_manager("commands.leave.success"))
-    logger(f"commands.leave", location=interaction.guild.id, user=interaction.user.name)
+    logger(f"commands.leave", location=interaction.guild.id,
+           user=interaction.user.name)
 
 
 @bot.tree.command(name='list', description="Lists all sounds.")
 async def list(interaction: discord.Interaction):
-    logger(f"commands.list", location=interaction.guild.id, user=interaction.user.name)
+    logger(f"commands.list", location=interaction.guild.id,
+           user=interaction.user.name)
     sound_names = config.get()["soundboard"]["sound_files"].keys()
     embed = discord.Embed(title=lang_manager(
         "commands.list.title"), color=discord.Color.blue())
@@ -524,7 +556,8 @@ async def random_cmd(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     random_sound = await rand_sound(guild_id)
     await interaction.response.send_message(lang_manager("commands.random.success", random_sound))
-    logger(f"commands.random {random_sound}", location=interaction.guild.id, user=interaction.user.name)
+    logger(f"commands.random {random_sound}",
+           location=interaction.guild.id, user=interaction.user.name)
 
 
 @bot.tree.command(name="language")
@@ -536,13 +569,16 @@ async def language(interaction: discord.Interaction, lang: str = None):
             global lang_manager
             lang_manager = LangHandler(lang)
             await interaction.response.send_message(content=lang_manager("commands.language.success"))
-            logger(f"commands.language {lang}", location=interaction.guild.id, user=interaction.user.name)
+            logger(
+                f"commands.language {lang}", location=interaction.guild.id, user=interaction.user.name)
         else:
             print(f"{lang} is not in {available_langs}")
-            logger(f"commands.language {lang} not in {available_langs}", level="ERROR", location=interaction.guild.id, user=interaction.user.name)
+            logger(f"commands.language {lang} not in {available_langs}", level="ERROR",
+                   location=interaction.guild.id, user=interaction.user.name)
     else:
         await interaction.response.send_message(content=lang_manager("commands.language.lang_empty", str(os.listdir(config.get()["lang_dir"]))), ephemeral=True)
-        logger(f"commands.language Field {lang} is empty", level="ERROR", location=interaction.guild.id, user=interaction.user.name)
+        logger(f"commands.language Field {lang} is empty", level="ERROR",
+               location=interaction.guild.id, user=interaction.user.name)
 
 
 @language.autocomplete('lang')
