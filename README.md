@@ -4,6 +4,10 @@ This is a small discord.py soundboard bot with REST-API and webinterface using f
 I got the initial code with a Tkinther interface from https://github.com/JonasB2510
 I changed it so it is using flask as an WebUI with HTTP-Basic-Auth
 
+# Screenshots:
+## Webui:
+![](https://git.absolutely-not-a-virus.de/soundbot/soundbot/raw/branch/main/screenshots/1.png)
+
 # Install: 
 `$ git clone https://git.absolutely-not-a-virus.de/soundbot/soundbot` 
 
