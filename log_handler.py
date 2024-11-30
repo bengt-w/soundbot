@@ -12,11 +12,11 @@ LATEST_LOG_FILE = os.path.join("logs", "latest.txt")
 
 open(LATEST_LOG_FILE, 'a').close()
 
-def log(message, level="INFO", time = datetime.now().strftime("%H:%M:%S"), location="WEBUI", user="Unknown", method=None):
+def log(message, level="INFO", time = datetime.now().strftime("%H:%M:%S"), location="WEBUI", user="Unknown", method=" "):
     if not message:
         raise ValueError("Message cannot be empty")
-    if method != None:
-        method = f"{method} "
+    if method != " ":
+        method = f" {method} "
     with open(LATEST_LOG_FILE, "a") as f:
-        f.writelines(f"[{time} {level}] {user}@{location}: {method}{message}\n")
+        f.writelines(f"[{time} {level}] {user}@{location}:{method}{message}\n")
         
