@@ -41,6 +41,9 @@
         },
         "random": {
             "success": "Sound $(1) is played randomly."
+        },
+        "loop": {
+            "success": "Sound $(1) is being played in a loop."
         }
     }
 }

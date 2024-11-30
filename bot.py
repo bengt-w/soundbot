@@ -1,7 +1,7 @@
 import os
 try:
     import subprocess
-    from datetime import datetime 
+    from datetime import datetime
     import json
     import discord
     from discord.ext import commands
@@ -32,6 +32,7 @@ if not os.path.exists(sounds_dir):
 
 # if you want to change this don't forget to change it in the config_handler.py
 CONFIG_FILE = os.path.join("config", "config.json")
+
 
 async def change_user(pfp_location, name):
     for guild in bot.guilds:
@@ -174,12 +175,19 @@ def play_sound():
 async def play_sound_coroutine(guild_id, sound_name):
     guild = bot.get_guild(int(guild_id))
     if guild and guild.voice_client:
+        def loop_starter(error=None):
+            asyncio.run_coroutine_threadsafe(loop(guild_id), bot.loop)
+            
         source = discord.FFmpegPCMAudio(
             config.get()["soundboard"]["sound_files"][sound_name],
             options=f'-filter:a "volume={config.get()["soundboard"]["volume"]}"'
         )
-        guild.voice_client.play(source)
+        guild.voice_client.play(source, after=loop_starter)
 
+    
+async def loop(guild_id):
+    if config.get()["soundboard"]["loop"] != "":
+        await play_sound_coroutine(guild_id, config.get()["soundboard"]["loop"])
 
 @app.route('/api/channel/join', methods=['POST'])
 @auth.login_required
@@ -310,10 +318,19 @@ def stop_sound():
 
 async def stop_sound_coroutine(guild_id):
     guild = bot.get_guild(int(guild_id))
+    config.set("soundboard/loop", "")
     if guild and guild.voice_client:
         guild.voice_client.stop()
         print(f"Stopped sound in channel for guild {guild_id}")
 
+@app.route('/api/sounds/loop', methods=['POST'])
+@auth.login_required
+def loop_sound():
+    data = request.json
+    config.set("soundboard/loop", data.get("sound"))
+    asyncio.run_coroutine_threadsafe(play_sound_coroutine(config.get()["soundboard"]["guild_id"], data.get("sound")), bot.loop)
+    logger(f"/api/sounds/loop {data.get("sound")}", user=request.authorization.username, method="POST")
+    return jsonify({"message": "success"})
 
 @app.route('/api/sounds/upload', methods=['POST'])
 @auth.login_required
@@ -430,6 +447,24 @@ async def login_code(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
+@bot.tree.command(name='loop', description="Loops a provided sound.")
+async def loop_cmd(interaction: discord.Interaction, sound_name: str):
+    config.set("soundboard/loop", sound_name)
+    await interaction.response.send_message(lang_manager("commands.loop.success", sound_name))
+    asyncio.run_coroutine_threadsafe(play_sound_coroutine(interaction.guild.id, sound_name), bot.loop)
+    logger(f"commands.loop {sound_name}", user=interaction.user.id, location=interaction.guild.id)
+
+@loop_cmd.autocomplete('sound_name')
+async def loop_cmd_autocomlete(interaction: discord.Interaction, current: str):
+    sounds = []
+    for sound in config.get()["soundboard"]["sound_files"]:
+        sounds.append(sound)
+
+    filtered = [sound for sound in sounds if current.lower() in sound.lower()]
+    if len(filtered) > 25:
+        return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered[:25]]
+    else:
+        return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered]
 
 @bot.tree.command(name='play', description="Plays a provided sound.")
 async def play(interaction: discord.Interaction, sound_name: str):
@@ -444,7 +479,6 @@ async def play(interaction: discord.Interaction, sound_name: str):
         await interaction.response.send_message(lang_manager("commands.play.404", sound_name), ephemeral=True)
         return
     await interaction.response.send_message(lang_manager("commands.play.success", sound_name))
-
 
 @play.autocomplete('sound_name')
 async def play_cmd_autocomplete(interaction: discord.Interaction, current: str):

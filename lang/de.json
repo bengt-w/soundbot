@@ -16,7 +16,7 @@
             "title": "Verfügbare Sounds:"
         }, 
         "stop": {
-            "success": "Stopped playing sounds."
+            "success": "Sounds gestoppt."
         },
         "add": {
             "success": "Sound $(1) erfolgreich hinzugefügt.",
@@ -41,6 +41,9 @@
         },
         "random": {
             "success": "Sound $(1) wird zufälligerweise abgespielt."
+        },
+        "loop": {
+            "success": "Sound $(1) wird in einer Endlosschleife abgespielt."
         }
     }
 }
