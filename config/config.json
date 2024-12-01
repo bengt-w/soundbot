@@ -10,7 +10,9 @@
         "auto_join": true,
         "_COMMENT": "volume is a decimal number so 0.5 is 50% etc. but max_volume is in percent",
         "volume": 1.0,
-        "max_volume": 500
+        "max_volume": 500,
+        "loop": "",
+        "queue": []
     },
     "customization": {
         "avatar": "./config/avatar.png",
