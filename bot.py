@@ -157,6 +157,15 @@ def rename_sound():
         return jsonify({"message": "Sound renamed."})
     return jsonify({"message": "Invalid input or name already exists."}), 400
 
+@app.route('/api/sounds/random', methods=['POST'])
+@auth.login_required
+async def random_sound():
+    random_sound = await rand_sound(config.get()["soundboard"]["guild_id"])
+    if random_sound == "error":
+        logger(f"/api/sounds/random Already playing", user=request.authorization.username, method="POST", level="ERROR")
+        return jsonify({"message": "Already playing"})
+    logger(f"/api/sounds/random {rand_sound}", user=request.authorization.username, method="POST")
+    return jsonify({"message": random_sound})
 
 @app.route('/api/sounds/play', methods=['POST'])
 @auth.login_required
@@ -643,6 +652,9 @@ async def list_queue(interaction: discord.Interaction, action: str = None):
 async def random_cmd(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     random_sound = await rand_sound(guild_id)
+    if random_sound == "error":
+        await interaction.response.send_message(lang_manager("commands.random.error"))
+        return
     await interaction.response.send_message(lang_manager("commands.random.success", random_sound))
     logger(f"commands.random {random_sound}",
            location=interaction.guild.id, user=interaction.user.name)
@@ -682,8 +694,16 @@ async def language_cmd_autocomplete(interaction: discord.Interaction, current: s
 
 
 async def rand_sound(guild_id, sound_group=None):
-    sound = random.choice(config.get()["soundboard"]["sound_files"].keys())
-    await play_sound_coroutine(guild_id, sound)
+    choosables = []
+    for sound in config.get()["soundboard"]["sound_files"].keys():
+        choosables.append(sound)
+    sound = random.choice(choosables)
+    try: 
+        await play_sound_coroutine(guild_id, sound)
+    except Exception as e:
+        logger(f"commands.random {sound} {e}", level="ERROR",
+               location=guild_id, user="Unknown")
+        return "error"
     return str(sound)
 
 

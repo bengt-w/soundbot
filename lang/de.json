@@ -44,7 +44,8 @@
             "max": "Volume kann nicht höher als $(1)% gesetzt werden!"
         },
         "random": {
-            "success": "Sound $(1) wird zufälligerweise abgespielt."
+            "success": "Sound $(1) wird zufälligerweise abgespielt.",
+            "error": "Es wird bereits ein Sound abgespielt."
         },
         "loop": {
             "success": "Sound $(1) wird in einer Endlosschleife abgespielt."

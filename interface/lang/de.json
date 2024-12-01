@@ -7,6 +7,7 @@
     "join_channel": "Kanal beitreten",
     "leave_channel": "Kanal verlassen",
     "stop_sound": "Sound/Loop stoppen",
+    "random_sound": "Zufallssound",
     "upload_sound": "Sound hochladen",
     "volume_control": "Lautstärkeregelung",
     "bot_status": "Bot-Status",

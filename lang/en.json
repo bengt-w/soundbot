@@ -44,7 +44,8 @@
             "max": "Volume can not be higher than $(1)%!"
         },
         "random": {
-            "success": "Sound $(1) is played randomly."
+            "success": "Sound $(1) is played randomly.",
+            "error": "There is already a sound playing."
         },
         "loop": {
             "success": "Sound $(1) is being played in a loop."

@@ -347,6 +347,7 @@
           setElementText("volumeControlLabel", langData.volume_control);
           setElementText("botStatusLabel", langData.bot_status);
           setElementText("updateStatusButton", langData.update_status);
+          setElementText("randomSoundButton", langData.random_sound);
         } catch (error) {
           console.error("Failed to get Language from API: ", error);
         }
@@ -407,7 +408,13 @@
           });
       }
 
-
+      async function playRandomSound() {
+        fetch("/api/sounds/random")
+          await fetch('/api/sounds/random', {
+              method: 'POST'
+            }
+          );
+      }
 
       function fetchVolume() {
         const res = fetch("/api/sounds/volume");
@@ -452,6 +459,7 @@
       <button id="joinChannelButton" onclick="joinChannel()"></button>
       <button id="leaveChannelButton" onclick="leaveChannel()"></button>
       <button id="stopSoundButton" onclick="stopSound()"></button>
+      <button id="randomSoundButton" onclick="playRandomSound()"></button>
     </div>
 
     <div>

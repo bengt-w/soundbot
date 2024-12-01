@@ -7,6 +7,7 @@
     "join_channel": "Join Channel",
     "leave_channel": "Leave Channel",
     "stop_sound": "Stop Sound/Loop",
+    "random_sound": "Random Sound",
     "upload_sound": "Upload Sound",
     "volume_control": "Volume Control",
     "bot_status": "Bot Status",
