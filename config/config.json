@@ -26,5 +26,7 @@
     "lang": "en",
     "lang_dir": "lang",
     "interface_lang_dir": "./interface/lang/",
+    "demo_mode": true,
+    "developement_mode": true,
     "CONFIG_FILE": "config/config.json"
 }

@@ -108,6 +108,15 @@ def index():
 @auth.login_required
 def get_sounds():
     logger("/api/sounds", user=request.authorization.username, method="GET")
+    sounds = {
+                "Sound 1": None,
+                "Sound 2": None,
+                "Sound 3": None,
+                "Sound 4": None,
+                "Sound 5": None,
+            }
+    if config.get()["demo_mode"]:
+        return sounds
     return config.get()["soundboard"]["sound_files"]
 
 
@@ -237,7 +246,8 @@ async def join_channel_coroutine(guild_id, channel_id):
             if not guild.voice_client:
                 try:
                     await channel.connect()
-                    await play_sound_coroutine(guild_id, "join")
+                    if not config.get()["developement_mode"]:
+                        await play_sound_coroutine(guild_id, "join")
                     print(f"Successfully joined channel {channel_id}")
                 except Exception as e:
                     print(f"Failed to join channel: {e}")
@@ -266,23 +276,33 @@ def leave_channel_api():
 @app.route('/api/bot/status', methods=['GET'])
 @auth.login_required
 def bot_status():
-    current_config = config.get()
-    guild = bot.get_guild(int(config.get()["soundboard"]["guild_id"]))
-    status = False
-    if guild and guild.voice_client and guild.voice_client.is_connected():
-        status = True
-    return jsonify({"status": status,
-                    "volume": current_config["soundboard"]["volume"],
-                    "sound_count": len(current_config["soundboard"]["sound_files"]),
-                    "queue": current_config["soundboard"]["queue"],
-                    "loop": current_config["soundboard"]["loop"],
-                    "lang": current_config["lang"]
-                    })
+    if config.get()["demo_mode"]:
+        return jsonify({"status": True,
+                        "volume": 100,
+                        "sound_count": 5,
+                        "queue": [],
+                        "loop": "Sound 1",
+                        "lang": "en"})
+    else: 
+        current_config = config.get()
+        guild = bot.get_guild(int(config.get()["soundboard"]["guild_id"]))
+        status = False
+        if guild and guild.voice_client and guild.voice_client.is_connected():
+            status = True
+        return jsonify({"status": status,
+                        "volume": current_config["soundboard"]["volume"],
+                        "sound_count": len(current_config["soundboard"]["sound_files"]),
+                        "queue": current_config["soundboard"]["queue"],
+                        "loop": current_config["soundboard"]["loop"],
+                        "lang": current_config["lang"]
+                        })
 
 
 @app.route('/api/servers', methods=['GET'])
 @auth.login_required
 def get_servers():
+    if config.get()["demo_mode"]:
+        return jsonify([{"id": 0, "name": "Test Server"}])
     servers = []
     for guild in bot.guilds:
         servers.append({"id": str(guild.id), "name": guild.name})
@@ -292,6 +312,8 @@ def get_servers():
 @app.route('/api/channels', methods=['POST'])
 @auth.login_required
 def get_channels():
+    if config.get()["demo_mode"]:
+        return jsonify([{"id": 0, "name": "Test Channel"}])
     data = request.json
     guild_id = int(data.get('guild_id').replace(
         "MakeTheIntAStringPleaseIHateJavaScriptWhyCantYouDeclareVariableTypes", ""))
@@ -314,22 +336,27 @@ async def leave_channel_coroutine(guild_id):
 @app.route('/api/settings', methods=['POST'])
 @auth.login_required
 def update_settings():
-    data = request.json
-    guild_id = data.get('guild_id')
-    channel_id = data.get('channel_id')
-    if guild_id and channel_id:
-        config.set("soundboard/guild_id", guild_id)
-        config.set("soundboard/channel_id", channel_id)
-        logger(f"/api/settings {channel_id}@{guild_id}",
-               user=request.authorization.username, method="POST")
-        return jsonify({"message": "Settings updated."})
-    logger("/api/settings", user=request.authorization.username, method="POST")
-    return jsonify({"message": "Invalid input."}), 400
+    if not config.get()["demo_mode"]:
+        data = request.json
+        guild_id = data.get('guild_id')
+        channel_id = data.get('channel_id')
+        if guild_id and channel_id:
+            config.set("soundboard/guild_id", guild_id)
+            config.set("soundboard/channel_id", channel_id)
+            logger(f"/api/settings {channel_id}@{guild_id}",
+                   user=request.authorization.username, method="POST")
+            return jsonify({"message": "Settings updated."})
+        logger("/api/settings", user=request.authorization.username, method="POST")
+        return jsonify({"message": "Invalid input."}), 400
+    else: 
+        return jsonify({"message": "Demo mode is enabled."})
 
 
 @app.route('/api/settings', methods=['GET'])
 @auth.login_required
 def get_settings():
+    if config.get()["demo_mode"]:
+        return jsonify({"guild_id": 0, "channel_id": 0})
     logger("/api/settings", user=request.authorization.username, method="GET")
     return jsonify({
         "guild_id": config.get()["soundboard"]["guild_id"],
@@ -424,6 +451,9 @@ def set_volume():
 def get_volume():
     volume = config.get()["soundboard"]["volume"]
     max_volume = config.get()["soundboard"]["max_volume"]
+    if config.get()["demo_mode"]:
+        volume = 1
+        max_volume = 500
     logger(f"/api/sounds/volume", user=request.authorization.username, method="GET")
     return jsonify({"volume": volume*100, "max": max_volume})
 
@@ -432,6 +462,8 @@ def get_volume():
 @auth.login_required
 def get_language():
     lang = config.get()["lang"]
+    if config.get()["demo_mode"]:
+        lang = "en"
     lang_file = os.path.join(
         config.get()["interface_lang_dir"], f'{lang}.json')
 
@@ -448,7 +480,8 @@ def get_language():
 async def on_ready():
     print(f'Logged in as {bot.user}')
     await change_user(config.get()["customization"]["avatar"], config.get()["customization"]["name"])
-    add_sounds_from_directory()
+    if not config.get()["demo_mode"]:
+        add_sounds_from_directory()
 
     if (config.get()["soundboard"]["auto_join"]):
         print(f"Joining: " + config.get()["soundboard"]["channel_id"])

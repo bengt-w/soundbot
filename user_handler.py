@@ -2,6 +2,7 @@ import random
 import string
 import os
 import json
+import config_handler as config
 
 USERFILE = "users.json"
 
@@ -27,6 +28,8 @@ def gen_authcode(username):
         return auth_code
         
 def validate_authcode(username, auth_code):
+    if (config.get()["demo_mode"] or config.get()["developement_mode"]) and username:
+        return True
     with open(USERFILE, 'r') as f:
         users = json.load(f)
         try:
