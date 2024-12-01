@@ -373,13 +373,6 @@
               statusLabel.textContent = status_err;
               statusLabel.style.color = "orange";
             }
-            if (data.guild_id != document.getElementById("guildId").value) {
-              document.getElementById("guildId").value = data.guild_id;
-              fetchChannels()
-            }
-            if (data.channel_id != document.getElementById("channelId").value) {
-              document.getElementById("channelId").value = data.channel_id;
-            }
             if (data.lang != lang) {
               fetchLanguage();
             }

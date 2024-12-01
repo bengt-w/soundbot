@@ -276,8 +276,6 @@ def bot_status():
                     "sound_count": len(current_config["soundboard"]["sound_files"]),
                     "queue": current_config["soundboard"]["queue"],
                     "loop": current_config["soundboard"]["loop"],
-                    "guild_id": current_config["soundboard"]["guild_id"],
-                    "channel_id": current_config["soundboard"]["channel_id"],
                     "lang": current_config["lang"]
                     })
 
