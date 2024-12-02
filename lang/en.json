@@ -4,7 +4,8 @@
         "play": {
             "success": "Sound $(1) is played.",
             "404": "Sound $(1) was not found.",
-            "queued": "$(1) has been added to the queue."
+            "queued": "$(1) has been added to the queue.",
+            "not_in_channel": "You are not in the voice channel."
         }, 
         "join": {
             "success": "Joined <#$(1)> successfully.",
@@ -45,7 +46,8 @@
         },
         "random": {
             "success": "Sound $(1) is played randomly.",
-            "error": "There is already a sound playing."
+            "error": "There is already a sound playing.",
+            "not_in_channel": "You are not in a voice channel."
         },
         "loop": {
             "success": "Sound $(1) is being played in a loop."

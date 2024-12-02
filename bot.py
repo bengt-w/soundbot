@@ -169,6 +169,11 @@ def rename_sound():
 @app.route('/api/sounds/random', methods=['POST'])
 @auth.login_required
 async def random_sound():
+    usernames = []
+    for user in bot.get_channel(int(config.get()["soundboard"]["channel_id"])).members:
+        usernames.append(user.name)
+    if request.authorization.username not in usernames:
+            return "You are not in the channel.", 403
     random_sound = await rand_sound(config.get()["soundboard"]["guild_id"])
     if random_sound == "error":
         logger(f"/api/sounds/random Already playing", user=request.authorization.username, method="POST", level="ERROR")
@@ -179,27 +184,32 @@ async def random_sound():
 @app.route('/api/sounds/play', methods=['POST'])
 @auth.login_required
 def play_sound():
-    data = request.json
-    name = data.get('name')
-    if name in config.get()["soundboard"]["sound_files"]:
-        guild_id = config.get()["soundboard"]["guild_id"]
-        if bot.get_guild(int(guild_id)).voice_client.is_playing():
-            queue = config.get()["soundboard"]["queue"]
-            queue.append(name)
-            config.set("soundboard/queue", queue)
-            logger(f"/api/sounds/play {name} (queued)",
+    usernames = []
+    for user in bot.get_channel(int(config.get()["soundboard"]["channel_id"])).members:
+        usernames.append(user.name)
+    if request.authorization.username in usernames:
+        data = request.json
+        name = data.get('name')
+        if name in config.get()["soundboard"]["sound_files"]:
+            guild_id = config.get()["soundboard"]["guild_id"]
+            if bot.get_guild(int(guild_id)).voice_client.is_playing():
+                queue = config.get()["soundboard"]["queue"]
+                queue.append(name)
+                config.set("soundboard/queue", queue)
+                logger(f"/api/sounds/play {name} (queued)",
+                       user=request.authorization.username, method="POST")
+                return jsonify({"message": "Sound added to queue."})
+            logger(f"/api/sounds/play {name}",
                    user=request.authorization.username, method="POST")
-            return jsonify({"message": "Sound added to queue."})
-        logger(f"/api/sounds/play {name}",
-               user=request.authorization.username, method="POST")
-        asyncio.run_coroutine_threadsafe(
-            play_sound_coroutine(guild_id, name), bot.loop)
-        return jsonify({"message": "Playing sound."})
+            asyncio.run_coroutine_threadsafe(
+                play_sound_coroutine(guild_id, name), bot.loop)
+            return jsonify({"message": "Playing sound."})
+        else:
+            return jsonify({"message": "Sound not found."}), 404
+            logger("/api/sounds/play 404", user=request.authorization.username,
+                   level="ERROR", method="POST")
     else:
-        return jsonify({"message": "Sound not found."}), 404
-        logger("/api/sounds/play 404", user=request.authorization.username,
-               level="ERROR", method="POST")
-
+        return "You are not in the voice channel.", 403
 
 async def play_sound_coroutine(guild_id, sound_name):
     guild = bot.get_guild(int(guild_id))
@@ -222,17 +232,19 @@ async def loop(guild_id):
         config.set("soundboard/queue", config.get()["soundboard"]["queue"][1:])
         pass
 
-
 @app.route('/api/channel/join', methods=['POST'])
 @auth.login_required
 def join_channel_api():
+    usernames = []
+    for user in bot.get_channel(int(config.get()["soundboard"]["channel_id"])).members:
+        usernames.append(user.name)
     data = request.json
-    guild_id = data.get('guild_id', config.get()["soundboard"]["guild_id"])
-    channel_id = data.get('channel_id', config.get()[
-                          "soundboard"]["channel_id"])
-    asyncio.run_coroutine_threadsafe(
-        join_channel_coroutine(guild_id, channel_id), bot.loop
-    )
+    guild_id = data.get('guild_id')
+    channel_id = data.get('channel_id')
+    if request.authorization.username in usernames:
+        asyncio.run_coroutine_threadsafe(
+            join_channel_coroutine(guild_id, channel_id), bot.loop
+        )
     logger(f"/api/channel/join {channel_id}@{guild_id}",
            user=request.authorization.username, method="POST")
     return jsonify({"message": "Joining channel."})
@@ -540,6 +552,12 @@ async def loop_cmd_autocomlete(interaction: discord.Interaction, current: str):
 
 @bot.tree.command(name='play', description="Plays a provided sound.")
 async def play(interaction: discord.Interaction, sound_name: str):
+    usernames = []
+    for user in bot.get_channel(int(config.get()["soundboard"]["channel_id"])).members:
+        usernames.append(user.name)
+    if not interaction.user.name in usernames:
+        await interaction.response.send_message(lang_manager("commands.play.not_in_channel"))
+        return
     logger(f"commands.play {sound_name}",
            user=interaction.user.name, location=interaction.guild.id)
     guild_id = interaction.guild.id
@@ -681,6 +699,12 @@ async def list_queue(interaction: discord.Interaction, action: str = None):
 
 @bot.tree.command(name='random', description="Plays a random sound.")
 async def random_cmd(interaction: discord.Interaction):
+    usernames = []
+    for user in bot.get_channel(int(config.get()["soundboard"]["channel_id"])).members:
+        usernames.append(user.name)
+    if not interaction.user.name in usernames:
+        await interaction.response.send_message(lang_manager("commands.random.not_in_channel"))
+        return
     guild_id = interaction.guild.id
     random_sound = await rand_sound(guild_id)
     if random_sound == "error":

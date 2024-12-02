@@ -4,7 +4,8 @@
         "play": {
             "success": "Sound $(1) wird abgespielt.",
             "404": "Sound $(1) wurde nicht gefunden.",
-            "queued": "$(1) wurde zur Warteschlange hinzugefügt."
+            "queued": "$(1) wurde zur Warteschlange hinzugefügt.",
+            "not_in_channel": "Du bist nicht in dem Sprachkanal."
         },
         "join": {
             "success": "Joined <#$(1)> successfully.",
@@ -45,7 +46,8 @@
         },
         "random": {
             "success": "Sound $(1) wird zufälligerweise abgespielt.",
-            "error": "Es wird bereits ein Sound abgespielt."
+            "error": "Es wird bereits ein Sound abgespielt.",
+            "not_in_channel": "Du bist nicht in dem Sprachkanal."
         },
         "loop": {
             "success": "Sound $(1) wird in einer Endlosschleife abgespielt."
