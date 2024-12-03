@@ -13,6 +13,7 @@
     "bot_status": "Bot Status",
     "update_status": "Update Status",
     "available_sounds": "Available Sounds",
+    "now_playing": "Now playing: ",
     "status_disconnected": "Disconnected",
     "status_connected": "Connected", 
     "status_error": "ERROR!",

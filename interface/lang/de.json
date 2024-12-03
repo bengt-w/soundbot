@@ -13,6 +13,7 @@
     "bot_status": "Bot-Status",
     "update_status": "Status aktualisieren",
     "available_sounds": "Verfügbare Sounds",
+    "now_playing": "Läuft gerade: ",
     "status_disconnected": "Getrennt",
     "status_connected": "Verbunden", 
     "status_error": "Fehler!",

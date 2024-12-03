@@ -215,14 +215,16 @@ async def play_sound_coroutine(guild_id, sound_name):
     guild = bot.get_guild(int(guild_id))
     if guild and guild.voice_client:
         def loop_n_queue_starter(error=None):
+            config.set("soundboard/current", "")
             asyncio.run_coroutine_threadsafe(loop(guild_id), bot.loop)
+            
 
         source = discord.FFmpegPCMAudio(
             config.get()["soundboard"]["sound_files"][sound_name],
             options=f'-filter:a "volume={config.get()["soundboard"]["volume"]}"'
         )
+        config.set("soundboard/current", sound_name)
         guild.voice_client.play(source, after=loop_n_queue_starter)
-
 
 async def loop(guild_id):
     if config.get()["soundboard"]["loop"] != "":
@@ -235,16 +237,12 @@ async def loop(guild_id):
 @app.route('/api/channel/join', methods=['POST'])
 @auth.login_required
 def join_channel_api():
-    usernames = []
-    for user in bot.get_channel(int(config.get()["soundboard"]["channel_id"])).members:
-        usernames.append(user.name)
     data = request.json
     guild_id = data.get('guild_id')
     channel_id = data.get('channel_id')
-    if request.authorization.username in usernames:
-        asyncio.run_coroutine_threadsafe(
+    asyncio.run_coroutine_threadsafe(
             join_channel_coroutine(guild_id, channel_id), bot.loop
-        )
+    )
     logger(f"/api/channel/join {channel_id}@{guild_id}",
            user=request.authorization.username, method="POST")
     return jsonify({"message": "Joining channel."})
@@ -284,6 +282,10 @@ def leave_channel_api():
            user=request.authorization.username, method="POST")
     return jsonify({"message": "Leaving channel."})
 
+@app.route('/api/sounds/queue', methods=['GET'])
+@auth.login_required
+def queue_api():
+    return jsonify(config.get()["soundboard"]["queue"])
 
 @app.route('/api/bot/status', methods=['GET'])
 @auth.login_required
@@ -305,6 +307,7 @@ def bot_status():
                         "volume": current_config["soundboard"]["volume"],
                         "sound_count": len(current_config["soundboard"]["sound_files"]),
                         "queue": current_config["soundboard"]["queue"],
+                        "current": current_config["soundboard"]["current"],
                         "loop": current_config["soundboard"]["loop"],
                         "lang": current_config["lang"]
                         })
