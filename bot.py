@@ -549,6 +549,10 @@ async def loop_cmd_autocomlete(interaction: discord.Interaction, current: str):
     else:
         return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered]
 
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member == bot.user:
+        await stop_sound_coroutine(member.guild.id)
 
 @bot.tree.command(name='play', description="Plays a provided sound.")
 async def play(interaction: discord.Interaction, sound_name: str):
