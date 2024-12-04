@@ -12,7 +12,8 @@
         "volume": 1.0,
         "max_volume": 500,
         "loop": "",
-        "queue": []
+        "queue": [],
+        "current": ""
     },
     "customization": {
         "avatar": "./config/avatar.png",
