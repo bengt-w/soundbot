@@ -97,6 +97,57 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 # Flask App Setup
 app = Flask(__name__, static_folder='interface/public')
 
+@app.route('/api/sounds/preview', methods=['POST'])
+@auth.login_required
+def preview_sound():
+    request_data = request.get_json()
+    sound_name = request_data.get('sound_name')
+    logger(f"/api/sounds/preview {sound_name}",
+           user=request.authorization.username, method="POST")
+    if sound_name:
+        sound_path = config.get()["soundboard"]["sound_files"][sound_name]
+        if os.path.exists(sound_path):
+            if not os.path.exists("./preview.json"):
+                with open("./preview.json", "w") as f:
+                    f.write('{}')
+            with open("./preview.json", "r") as f:
+                previews = json.load(f)
+            preview_id = str(random.randint(100000, 999999))
+            previews[preview_id] = {"name": sound_name, "expire": time.time()+60}
+            with open("./preview.json", "w") as f:
+                json.dump(previews, f, indent=4)
+            return jsonify({"preview_id": preview_id}), 200
+        else:
+            return jsonify({"error": "Sound not found."}), 404
+    else:
+        return jsonify({"error": "Invalid request."}), 400
+
+@app.route("/preview/<preview_id>", methods=['GET'])
+@auth.login_required
+def preview_sound_by_id(preview_id):
+    logger(f"/preview/{preview_id}",
+           user=request.authorization.username, method="GET")
+    with open("./preview.json", "r") as f:
+        previews = json.load(f)
+        try: 
+            for preview in previews:
+                if int(previews[preview]["expire"]) < int(time.time()):
+                    previews.pop(preview)
+            with open("./preview.json", "w") as f:
+                json.dump(preview, f, indent=4)
+        except Exception as e:
+            pass
+        try:
+            sound_name = previews[str(preview_id)]["name"]
+            sound_path = config.get()["soundboard"]["sound_files"][sound_name]
+            with open("preview.json", "w") as f:
+                previews.pop(str(preview_id))
+                json.dump(previews, f, indent=4)
+            if os.path.exists(sound_path):
+                return send_file(sound_path, as_attachment=False, last_modified=time.time())
+        except Exception as e:
+            pass
+    return "Couldn't find a sound with that ID.", 404    
 
 @app.route("/api/sounds/download", methods=['POST'])
 @auth.login_required

@@ -109,6 +109,7 @@
           <button title="Delete" class="actionButton" onclick="deleteSound('${name}')">🗑️</button>
           <button title="Rename" class="actionButton" onclick="renameSound('${name}')">🏷️</button>
           <button title="Download" class="actionButton" onclick="downloadSound('${name}')">💾</button>
+          <button title="Preview" class="actionButton" onclick="previewSound('${name}')">👀</button>
           <button title="Loop" style="opacity: 0.5" class="actionButton loopButton" onclick="loopSound('${name}')">🔁</button>
           <strong class="soundName">${name}</strong>
               `;
@@ -151,6 +152,16 @@
       });
       json = await res.json();
       window.location.href += "/download/" + json.download_id;
+    }
+
+    async function previewSound(name) {
+      const res = await fetch("/api/sounds/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ "sound_name": name }),
+      });
+      json = await res.json();
+      window.location.href += "/preview/" + json.preview_id;      
     }
 
     // Join the voice channel by sending a POST request
