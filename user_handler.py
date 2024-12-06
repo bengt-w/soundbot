@@ -18,14 +18,14 @@ def get_authcode(username):
         except KeyError:
             raise ValueError("User not found")
 
-def gen_authcode(username):
+def gen_authcode(username, theme="dark"):
     with open(USERFILE, 'r') as f:
         users = json.load(f)
     
     auth_code = generate_authcode()
     
     if username not in users:
-        users[username] = {"otp": None, "theme": "dark"}
+        users[username] = {"otp": None, "theme": theme}
     
     users[username]["otp"] = auth_code
     
