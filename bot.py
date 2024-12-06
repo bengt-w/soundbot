@@ -318,12 +318,16 @@ def queue_api():
 async def bot_status():
     if config.get()["demo_mode"]:
         return jsonify({"status": True,
-                        "volume": 100,
+                        "volume": 1,
                         "sound_count": 5,
-                        "queue": [],
-                        "theme": "dark",
+                        "queue": [
+                            "Sound 3",
+                            "Sound 1",
+                            ],
+                        "theme": await get_theme(request.authorization.username),
                         "loop": "Sound 1",
-                        "lang": "en"})
+                        "lang": config.get()["lang"],
+                        "current": "Sound 4"})
     else: 
         current_config = config.get()
         guild = bot.get_guild(int(config.get()["soundboard"]["guild_id"]))
@@ -505,8 +509,6 @@ def get_volume():
 @auth.login_required
 def get_language():
     lang = config.get()["lang"]
-    if config.get()["demo_mode"]:
-        lang = "en"
     lang_file = os.path.join(
         config.get()["interface_lang_dir"], f'{lang}.json')
 

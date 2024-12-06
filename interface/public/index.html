@@ -373,8 +373,8 @@
         setElementText("updateStatusButton", langData.update_status);
         setElementText("randomSoundButton", langData.random_sound);
         setElementText("nowPlaying", langData.now_playing);
-        setElementText("defaultLight", langData.themes.default)
-        setElementText("defaultDark", langData.themes.default)
+        setElementText("light", langData.themes.default)
+        setElementText("dark", langData.themes.default)
         setElementText("cyanLight", langData.themes.cyan)
         setElementText("cyanDark", langData.themes.cyan)
         setElementText("pinkLight", langData.themes.pink)
@@ -506,7 +506,7 @@
 <body>
   <select value="None" id="theme" onchange="setTheme()">
     <optgroup label="Light">
-      <option id="defaultLight" value="light"></option>
+      <option id="light" value="light"></option>
       <option id="cyanLight" value="cyanLight"></option>
       <option id="pinkLight" value="pinkLight"></option>
       <option id="greenLight" value="greenLight"></option>
@@ -521,7 +521,7 @@
       <option id="jannikLight" value="jannikLight"></option>
     </optgroup>
     <optgroup label="Dark">
-      <option id="defaultDark" value="dark"></option>
+      <option id="dark" value="dark"></option>
       <option id="cyanDark" value="cyanDark"></option>
       <option id="pinkDark" value="pinkDark"></option>
       <option id="greenDark" value="greenDark"></option>

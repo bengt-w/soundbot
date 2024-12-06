@@ -1,8 +1,8 @@
 {
     "title": "Soundboard",
     "channel_settings": "Kanaleinstellungen",
-    "guild_id": "Gilden-ID:",
-    "channel_id": "Kanal-ID:",
+    "guild_id": "Server:",
+    "channel_id": "Kanal:",
     "save_settings": "Einstellungen speichern",
     "join_channel": "Kanal beitreten",
     "leave_channel": "Kanal verlassen",
