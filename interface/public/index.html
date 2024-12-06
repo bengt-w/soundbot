@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="themes.css">
   <style>
     h1,
     h2,
@@ -15,19 +16,18 @@
     }
 
     * {
-      color: #fff;
+      color: var(--text-950);
     }
 
     body {
       margin-top: 0;
       padding-top: 0;
       font-family: sans-serif;
-      background-color: #070707;
+      background-color: var(--background-100);
     }
 
     button {
-      background-color: #333;
-      color: #fff;
+      background-color: var(--primary-400);
       border: none;
       padding: 0.33rem 0.66rem;
       border-radius: 1rem;
@@ -35,18 +35,18 @@
     }
 
     button:hover {
-      background-color: #444;
+      background-color: var(--primary-300);
     }
 
     #soundboard>div {
       margin-top: 0.33rem;
       margin-bottom: 0.33rem;
-      background-color: #111;
+      background-color: var(--primary-200);
       border-radius: 1rem;
     }
 
     #soundboard>div:hover {
-      background-color: #161616;
+      background-color: var(--primary-50);
     }
 
     input[type="file"] {
@@ -58,15 +58,15 @@
     }
 
     input[type="range"] {
-      background-color: #000;
-      color: #000;
+      background-color: var(--background-50);
       cursor: pointer;
       width: 25rem;
     }
 
     select {
-      background-color: #333;
-      color: #fff;
+      margin: 0.1rem 0.1rem 0.1rem 0.1rem;
+      background-color: var(--accent-200);
+      border: none;
       padding: 0.33rem 0.66rem;
       border-radius: 1rem;
       cursor: pointer;
@@ -74,9 +74,18 @@
       font-weight: bold;
     }
 
-    div {
+    .soundButtonDiv {
+      display: flex;
+      align-items: center;
       min-height: 30px;
       line-height: 30px;
+      gap: 0.33rem;
+    }
+
+    #theme {
+      position: absolute;
+      top: 0.33rem;
+      right: 0.33rem;
     }
   </style>
   <title>Discord Soundboard</title>
@@ -94,6 +103,7 @@
 
       for (const name in sounds) {
         const soundDiv = document.createElement("div");
+        soundDiv.classList.add("soundButtonDiv");
         soundDiv.innerHTML = `
           <button title="Play" class="actionButton" onclick="playSound('${name}')">▶️</button>
           <button title="Delete" class="actionButton" onclick="deleteSound('${name}')">🗑️</button>
@@ -141,6 +151,16 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guild_id: guildId, channel_id: channelId }),
+      });
+    }
+
+    async function setTheme() {
+      document.querySelector('html').dataset.theme = document.getElementById("theme").value ;
+      const theme = document.querySelector('html').dataset.theme;
+      await fetch("/api/theme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ "theme": theme }),
       });
     }
 
@@ -202,6 +222,7 @@
       const settings = await res.json();
       document.getElementById("guildId").value = settings.guild_id;
       document.getElementById("channelId").value = settings.channel_id;
+      document.getElementById(document.querySelector('html').dataset.theme).selected = true;
     }
 
     // Gets the servers from the API and updates the dropdowns
@@ -352,6 +373,32 @@
         setElementText("updateStatusButton", langData.update_status);
         setElementText("randomSoundButton", langData.random_sound);
         setElementText("nowPlaying", langData.now_playing);
+        setElementText("defaultLight", langData.themes.default)
+        setElementText("defaultDark", langData.themes.default)
+        setElementText("cyanLight", langData.themes.cyan)
+        setElementText("cyanDark", langData.themes.cyan)
+        setElementText("pinkLight", langData.themes.pink)
+        setElementText("pinkDark", langData.themes.pink)
+        setElementText("greenLight", langData.themes.green)
+        setElementText("greenDark", langData.themes.green)
+        setElementText("blueLight", langData.themes.blue)
+        setElementText("blueDark", langData.themes.blue)
+        setElementText("purpleLight", langData.themes.purple)
+        setElementText("purpleDark", langData.themes.purple)
+        setElementText("beigeLight", langData.themes.beige)
+        setElementText("beigeDark", langData.themes.beige)
+        setElementText("redLight", langData.themes.red)
+        setElementText("redDark", langData.themes.red)
+        setElementText("yellowLight", langData.themes.yellow)
+        setElementText("yellowDark", langData.themes.yellow)
+        setElementText("orangeLight", langData.themes.orange)
+        setElementText("orangeDark", langData.themes.orange)
+        setElementText("greyLight", langData.themes.grey)
+        setElementText("greyDark", langData.themes.grey)
+        setElementText("uglyLight", langData.themes.ugly)
+        setElementText("uglyDark", langData.themes.ugly)
+        setElementText("jannikLight", langData.themes.jannik)
+        setElementText("jannikDark", langData.themes.jannik)
       } catch (error) {
         console.error("Failed to get Language from API: ", error);
       }
@@ -413,6 +460,8 @@
           if (targetButton) {
             targetButton.style.opacity = "1";
           }
+          document.querySelector('html').dataset.theme = data.theme;
+          document.getElementById(data.theme).selected = true;
         })
         .catch((error) => {
           console.error("Failed to get Bot Status from API: ", error);
@@ -448,13 +497,45 @@
       fetchLanguage();
       updateBotStatus();
       fetchSounds();
-      setTimeout(() => fetchSettings(), 75);
+      setTimeout(() => fetchSettings(), 100);
       setInterval(updateBotStatus, 1000);
     }
   </script>
 </head>
 
 <body>
+  <select value="None" id="theme" onchange="setTheme()">
+    <optgroup label="Light">
+      <option id="defaultLight" value="light"></option>
+      <option id="cyanLight" value="cyanLight"></option>
+      <option id="pinkLight" value="pinkLight"></option>
+      <option id="greenLight" value="greenLight"></option>
+      <option id="blueLight" value="blueLight"></option>
+      <option id="purpleLight" value="purpleLight"></option>
+      <option id="beigeLight" value="beigeLight"></option>
+      <option id="redLight" value="redLight"></option>
+      <option id="yellowLight" value="yellowLight"></option>
+      <option id="orangeLight" value="orangeLight"></option>
+      <option id="greyLight" value="greyLight"></option>
+      <option id="uglyLight" value="uglyLight"></option>
+      <option id="jannikLight" value="jannikLight"></option>
+    </optgroup>
+    <optgroup label="Dark">
+      <option id="defaultDark" value="dark"></option>
+      <option id="cyanDark" value="cyanDark"></option>
+      <option id="pinkDark" value="pinkDark"></option>
+      <option id="greenDark" value="greenDark"></option>
+      <option id="blueDark" value="blueDark"></option>
+      <option id="purpleDark" value="purpleDark"></option>
+      <option id="beigeDark" value="beigeDark"></option>
+      <option id="redDark" value="redDark"></option>
+      <option id="yellowDark" value="yellowDark"></option>
+      <option id="orangeDark" value="orangeDark"></option>
+      <option id="greyDark" value="greyDark"></option>
+      <option id="uglyDark" value="uglyDark"></option>
+      <option id="jannikDark" value="jannikDark"></option>
+    </optgroup>
+  </select>
   <div class="left">
     <h1 id="title" style="margin: 0;"></h1>
 

@@ -17,5 +17,20 @@
     "status_disconnected": "Getrennt",
     "status_connected": "Verbunden", 
     "status_error": "Fehler!",
-    "lang": "de"
+    "lang": "de",
+    "themes": {
+        "default": "Standart",
+        "cyan": "Cyan",
+        "pink": "Pink",
+        "green": "Grün",
+        "blue": "Blau",
+        "purple": "Lila",
+        "beige": "Beige",
+        "red": "Rot",
+        "yellow": "Gelb",
+        "orange": "Orange",
+        "grey": "Grau",
+        "ugly": "Hässlich",
+        "jannik": "Jannik"
+    }
 }

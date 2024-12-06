@@ -29,5 +29,20 @@
     "interface_lang_dir": "./interface/lang/",
     "demo_mode": false,
     "developement_mode": true,
-    "CONFIG_FILE": "config/config.json"
+    "CONFIG_FILE": "config/config.json",
+    "themes": [
+        "default",
+        "cyan",
+        "pink",
+        "green",
+        "blue",
+        "purple",
+        "beige",
+        "red",
+        "yellow",
+        "orange",
+        "grey",
+        "ugly",
+        "jannik"
+    ]
 }

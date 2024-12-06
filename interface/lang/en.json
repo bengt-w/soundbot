@@ -17,5 +17,20 @@
     "status_disconnected": "Disconnected",
     "status_connected": "Connected", 
     "status_error": "ERROR!",
-    "lang": "en"
+    "lang": "en",
+    "themes": {
+        "default": "default",
+        "cyan": "cyan",
+        "pink": "pink",
+        "green": "green",
+        "blue": "blue",
+        "purple": "purple",
+        "beige": "beige",
+        "red": "red",
+        "yellow": "yellow",
+        "orange": "orange",
+        "grey": "grey",
+        "ugly": "ugly",
+        "jannik": "Jannik"
+    }
 }

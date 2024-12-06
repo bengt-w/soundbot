@@ -16,7 +16,7 @@ try:
     import random
     from lang_handler import LangHandler
     import config_handler as config
-    from user_handler import validate_authcode, gen_authcode
+    from user_handler import validate_authcode, gen_authcode, set_theme, get_theme
     from log_handler import log as logger
 except ImportError:
     print("Please install the dependencies with:")
@@ -103,6 +103,32 @@ def index():
     logger("/index.html", user=request.authorization.username, method="GET")
     return app.send_static_file('index.html')
 
+@app.route('/themes.css', methods=['GET'])
+@auth.login_required
+def get_themes_css():
+    logger("/themes.css", user=request.authorization.username, method="GET")
+    return app.send_static_file('themes.css')
+
+@app.route('/api/theme', methods=['POST'])
+@auth.login_required
+def set_theme_api():
+    data = request.json
+    theme = data.get('theme')
+    logger(f"/api/theme {theme}", user=request.authorization.username, method="POST")
+    set_theme(request.authorization.username, theme)
+    return jsonify({"message": "Theme changed."})
+
+@app.route('/api/theme', methods=['GET'])
+@auth.login_required
+async def get_theme_api():
+    logger("/api/theme", user=request.authorization.username, method="GET")
+    return jsonify({"theme": await get_theme(request.authorization.username)})
+
+@app.route('/api/themes', methods=['GET'])
+@auth.login_required
+def get_themes():
+    logger("/api/themes", user=request.authorization.username, method="GET")
+    return jsonify(config.get()["themes"])
 
 @app.route('/api/sounds', methods=['GET'])
 @auth.login_required
@@ -289,12 +315,13 @@ def queue_api():
 
 @app.route('/api/bot/status', methods=['GET'])
 @auth.login_required
-def bot_status():
+async def bot_status():
     if config.get()["demo_mode"]:
         return jsonify({"status": True,
                         "volume": 100,
                         "sound_count": 5,
                         "queue": [],
+                        "theme": "dark",
                         "loop": "Sound 1",
                         "lang": "en"})
     else: 
@@ -308,6 +335,7 @@ def bot_status():
                         "sound_count": len(current_config["soundboard"]["sound_files"]),
                         "queue": current_config["soundboard"]["queue"],
                         "current": current_config["soundboard"]["current"],
+                        "theme": await get_theme(request.authorization.username),
                         "loop": current_config["soundboard"]["loop"],
                         "lang": current_config["lang"]
                         })
