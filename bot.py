@@ -6,7 +6,7 @@ try:
     import discord
     from discord.ext import commands
     from discord import app_commands
-    from flask import Flask, request, jsonify, render_template, request
+    from flask import Flask, request, jsonify, render_template, request, send_file
     import asyncio
     import threading
     from werkzeug.security import generate_password_hash, check_password_hash
@@ -18,6 +18,7 @@ try:
     import config_handler as config
     from user_handler import validate_authcode, gen_authcode, set_theme, get_theme
     from log_handler import log as logger
+    import time
 except ImportError:
     print("Please install the dependencies with:")
     print("")
@@ -97,11 +98,66 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 app = Flask(__name__, static_folder='interface/public')
 
 
+@app.route("/api/sounds/download", methods=['POST'])
+@auth.login_required
+def download_sound():
+    request_data = request.get_json()
+    sound_name = request_data.get('sound_name')
+    logger(f"/api/sounds/download {sound_name}",
+           user=request.authorization.username, method="POST")
+    if sound_name:
+        sound_path = config.get()["soundboard"]["sound_files"][sound_name]
+        if os.path.exists(sound_path):
+            if not os.path.exists("./downloads.json"):
+                with open("./downloads.json", "w") as f:
+                    f.write('{}')
+            with open("./downloads.json", "r") as f:
+                downloads = json.load(f)
+            dl_id = str(random.randint(100000, 999999))
+            downloads[dl_id] = {"name": sound_name, "expire": time.time()+60}
+            with open("./downloads.json", "w") as f:
+                json.dump(downloads, f, indent=4)
+            return jsonify({"download_id": dl_id}), 200
+        else:
+            return jsonify({"error": "Sound not found."}), 404
+    else:
+        return jsonify({"error": "Invalid request."}), 400
+
+
+@app.route("/download/<dl_id>", methods=['GET'])
+@auth.login_required
+def download_sound_by_id(dl_id):
+    logger(f"/download/{dl_id}",
+           user=request.authorization.username, method="GET")
+    with open("./downloads.json", "r") as f:
+        downloads = json.load(f)
+        try: 
+            for download in downloads:
+                if int(downloads[download]["expire"]) < int(time.time()):
+                    downloads.pop(download)
+            with open("./downloads.json", "w") as f:
+                json.dump(downloads, f, indent=4)
+        except Exception as e:
+            pass
+        try:
+            sound_name = downloads[str(dl_id)]["name"]
+            sound_path = config.get()["soundboard"]["sound_files"][sound_name]
+            with open("downloads.json", "w") as f:
+                downloads.pop(str(dl_id))
+                json.dump(downloads, f, indent=4)
+            if os.path.exists(sound_path):
+                return send_file(sound_path, as_attachment=True, last_modified=time.time())
+        except Exception as e:
+            pass
+    return "Couldn't find a sound with that ID.", 404
+
+
 @app.route('/')
 @auth.login_required
 def index():
     logger("/index.html", user=request.authorization.username, method="GET")
     return app.send_static_file('index.html')
+
 
 @app.route('/themes.css', methods=['GET'])
 @auth.login_required
@@ -109,14 +165,17 @@ def get_themes_css():
     logger("/themes.css", user=request.authorization.username, method="GET")
     return app.send_static_file('themes.css')
 
+
 @app.route('/api/theme', methods=['POST'])
 @auth.login_required
 def set_theme_api():
     data = request.json
     theme = data.get('theme')
-    logger(f"/api/theme {theme}", user=request.authorization.username, method="POST")
+    logger(f"/api/theme {theme}",
+           user=request.authorization.username, method="POST")
     set_theme(request.authorization.username, theme)
     return jsonify({"message": "Theme changed."})
+
 
 @app.route('/api/theme', methods=['GET'])
 @auth.login_required
@@ -124,23 +183,25 @@ async def get_theme_api():
     logger("/api/theme", user=request.authorization.username, method="GET")
     return jsonify({"theme": await get_theme(request.authorization.username)})
 
+
 @app.route('/api/themes', methods=['GET'])
 @auth.login_required
 def get_themes():
     logger("/api/themes", user=request.authorization.username, method="GET")
     return jsonify(config.get()["themes"])
 
+
 @app.route('/api/sounds', methods=['GET'])
 @auth.login_required
 def get_sounds():
     logger("/api/sounds", user=request.authorization.username, method="GET")
     sounds = {
-                "Sound 1": None,
-                "Sound 2": None,
-                "Sound 3": None,
-                "Sound 4": None,
-                "Sound 5": None,
-            }
+        "Sound 1": None,
+        "Sound 2": None,
+        "Sound 3": None,
+        "Sound 4": None,
+        "Sound 5": None,
+    }
     if config.get()["demo_mode"]:
         return sounds
     return config.get()["soundboard"]["sound_files"]
@@ -192,6 +253,7 @@ def rename_sound():
         return jsonify({"message": "Sound renamed."})
     return jsonify({"message": "Invalid input or name already exists."}), 400
 
+
 @app.route('/api/sounds/random', methods=['POST'])
 @auth.login_required
 async def random_sound():
@@ -199,13 +261,16 @@ async def random_sound():
     for user in bot.get_channel(int(config.get()["soundboard"]["channel_id"])).members:
         usernames.append(user.name)
     if request.authorization.username not in usernames:
-            return "You are not in the channel.", 403
+        return "You are not in the channel.", 403
     random_sound = await rand_sound(config.get()["soundboard"]["guild_id"])
     if random_sound == "error":
-        logger(f"/api/sounds/random Already playing", user=request.authorization.username, method="POST", level="ERROR")
+        logger(f"/api/sounds/random Already playing",
+               user=request.authorization.username, method="POST", level="ERROR")
         return jsonify({"message": "Already playing"})
-    logger(f"/api/sounds/random {rand_sound}", user=request.authorization.username, method="POST")
+    logger(f"/api/sounds/random {rand_sound}",
+           user=request.authorization.username, method="POST")
     return jsonify({"message": random_sound})
+
 
 @app.route('/api/sounds/play', methods=['POST'])
 @auth.login_required
@@ -237,13 +302,13 @@ def play_sound():
     else:
         return "You are not in the voice channel.", 403
 
+
 async def play_sound_coroutine(guild_id, sound_name):
     guild = bot.get_guild(int(guild_id))
     if guild and guild.voice_client:
         def loop_n_queue_starter(error=None):
             config.set("soundboard/current", "")
             asyncio.run_coroutine_threadsafe(loop(guild_id), bot.loop)
-            
 
         source = discord.FFmpegPCMAudio(
             config.get()["soundboard"]["sound_files"][sound_name],
@@ -251,6 +316,7 @@ async def play_sound_coroutine(guild_id, sound_name):
         )
         config.set("soundboard/current", sound_name)
         guild.voice_client.play(source, after=loop_n_queue_starter)
+
 
 async def loop(guild_id):
     if config.get()["soundboard"]["loop"] != "":
@@ -260,6 +326,7 @@ async def loop(guild_id):
         config.set("soundboard/queue", config.get()["soundboard"]["queue"][1:])
         pass
 
+
 @app.route('/api/channel/join', methods=['POST'])
 @auth.login_required
 def join_channel_api():
@@ -267,7 +334,7 @@ def join_channel_api():
     guild_id = data.get('guild_id')
     channel_id = data.get('channel_id')
     asyncio.run_coroutine_threadsafe(
-            join_channel_coroutine(guild_id, channel_id), bot.loop
+        join_channel_coroutine(guild_id, channel_id), bot.loop
     )
     logger(f"/api/channel/join {channel_id}@{guild_id}",
            user=request.authorization.username, method="POST")
@@ -308,10 +375,12 @@ def leave_channel_api():
            user=request.authorization.username, method="POST")
     return jsonify({"message": "Leaving channel."})
 
+
 @app.route('/api/sounds/queue', methods=['GET'])
 @auth.login_required
 def queue_api():
     return jsonify(config.get()["soundboard"]["queue"])
+
 
 @app.route('/api/bot/status', methods=['GET'])
 @auth.login_required
@@ -323,12 +392,12 @@ async def bot_status():
                         "queue": [
                             "Sound 3",
                             "Sound 1",
-                            ],
+                        ],
                         "theme": await get_theme(request.authorization.username),
                         "loop": "Sound 1",
                         "lang": config.get()["lang"],
                         "current": "Sound 4"})
-    else: 
+    else:
         current_config = config.get()
         guild = bot.get_guild(int(config.get()["soundboard"]["guild_id"]))
         status = False
@@ -395,7 +464,7 @@ def update_settings():
             return jsonify({"message": "Settings updated."})
         logger("/api/settings", user=request.authorization.username, method="POST")
         return jsonify({"message": "Invalid input."}), 400
-    else: 
+    else:
         return jsonify({"message": "Demo mode is enabled."})
 
 
@@ -582,10 +651,12 @@ async def loop_cmd_autocomlete(interaction: discord.Interaction, current: str):
     else:
         return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered]
 
+
 @bot.event
 async def on_voice_state_update(member, before, after):
     if member == bot.user:
         await stop_sound_coroutine(member.guild.id)
+
 
 @bot.tree.command(name='play', description="Plays a provided sound.")
 async def play(interaction: discord.Interaction, sound_name: str):
@@ -790,7 +861,7 @@ async def rand_sound(guild_id, sound_group=None):
     for sound in config.get()["soundboard"]["sound_files"].keys():
         choosables.append(sound)
     sound = random.choice(choosables)
-    try: 
+    try:
         await play_sound_coroutine(guild_id, sound)
     except Exception as e:
         logger(f"commands.random {sound} {e}", level="ERROR",

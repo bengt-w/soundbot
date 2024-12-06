@@ -108,6 +108,7 @@
           <button title="Play" class="actionButton" onclick="playSound('${name}')">▶️</button>
           <button title="Delete" class="actionButton" onclick="deleteSound('${name}')">🗑️</button>
           <button title="Rename" class="actionButton" onclick="renameSound('${name}')">🏷️</button>
+          <button title="Download" class="actionButton" onclick="downloadSound('${name}')">💾</button>
           <button title="Loop" style="opacity: 0.5" class="actionButton loopButton" onclick="loopSound('${name}')">🔁</button>
           <strong class="soundName">${name}</strong>
               `;
@@ -140,6 +141,16 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guild_id: guildId }),
       });
+    }
+
+    async function downloadSound(name) {
+      const res = await fetch("/api/sounds/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ "sound_name": name }),
+      });
+      json = await res.json();
+      window.location.href += "/download/" + json.download_id;
     }
 
     // Join the voice channel by sending a POST request
