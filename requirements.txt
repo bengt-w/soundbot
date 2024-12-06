@@ -1,6 +1,7 @@
 discord.py
 discord.py[voice]
 flask
+flask[async]
 asyncio
 werkzeug
 PyNaCL
