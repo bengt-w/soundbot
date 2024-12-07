@@ -87,6 +87,11 @@
       top: 0.33rem;
       right: 0.33rem;
     }
+
+    .length {
+      position: absolute;
+      right: 1rem;
+    }
   </style>
   <title>Discord Soundboard</title>
   <script>
@@ -96,8 +101,10 @@
     var status_err = "";
     // Fetch sounds from the API and update the soundboard
     async function fetchSounds() {
-      const res = await fetch("/api/sounds");
-      const sounds = await res.json();
+      const res_s = await fetch("/api/sounds");
+      const res_l = await fetch("/api/sounds/lengths");
+      const sounds = await res_s.json();
+      const lengths = await res_l.json();
       const soundboard = document.getElementById("soundboard");
       soundboard.innerHTML = "";
 
@@ -112,8 +119,13 @@
           <button title="Preview" class="actionButton" onclick="previewSound('${name}')">👀</button>
           <button title="Loop" style="opacity: 0.5" class="actionButton loopButton" onclick="loopSound('${name}')">🔁</button>
           <strong class="soundName">${name}</strong>
+          <label class="length" id="${name}-length">00:00:00</label>
               `;
         soundboard.appendChild(soundDiv);
+      }
+      for (const len in lengths) {
+        const length = document.getElementById(`${len}-length`);
+        length.innerHTML = lengths[len];
       }
     }
 

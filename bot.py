@@ -19,6 +19,7 @@ try:
     from user_handler import validate_authcode, gen_authcode, set_theme, get_theme
     from log_handler import log as logger
     import time
+    import ffmpeg
 except ImportError:
     print("Please install the dependencies with:")
     print("")
@@ -34,6 +35,11 @@ if not os.path.exists(sounds_dir):
 # if you want to change this don't forget to change it in the config_handler.py
 CONFIG_FILE = os.path.join("config", "config.json")
 
+def format_sound_length(secs):
+    secs = int(round(float(secs)))
+    mins = secs // 60
+    secs = secs % 60
+    return f"{mins}m {secs}s"
 
 async def change_user(pfp_location, name):
     for guild in bot.guilds:
@@ -45,16 +51,26 @@ async def change_user(pfp_location, name):
     if os.path.exists(pfp_location):
         with open(pfp_location, 'rb') as avatar_file:
             avatar_data = avatar_file.read()
-            await bot.user.edit(avatar=avatar_data, username=name)
+            # await bot.user.edit(avatar=avatar_data, username=name)
     else:
         print("Avatar file not found.")
     print("User profile changed!")
 
 
-def add_sounds_from_directory():
+def add_sounds_from_directory():    
     tmp = config.get()
     sounds_directory = str(tmp["soundboard"]["sounds_dir"])
-
+    
+    len_cfg = tmp
+    for sound in len_cfg["soundboard"]["sound_files"]:
+        sound_path = len_cfg["soundboard"]["sound_files"][sound]
+        duration = ffmpeg.probe(sound_path)['format']['duration']
+        duration_string = format_sound_length(duration)
+        len_cfg["soundboard"]["lengths"][sound] = duration_string
+            
+    with open("config/config.json", "w") as f:
+        json.dump(len_cfg, f, indent=4)
+            
     for filename in os.listdir(sounds_directory):
         if filename.endswith('.mp3'):
             sound_name = os.path.splitext(filename)[0]
@@ -241,6 +257,11 @@ def get_themes():
     logger("/api/themes", user=request.authorization.username, method="GET")
     return jsonify(config.get()["themes"])
 
+@app.route('/api/sounds/lengths', methods=['GET'])
+@auth.login_required
+def get_sound_lengths():
+    logger("/api/sounds/lengths", user=request.authorization.username, method="POST")
+    return jsonify(config.get()["soundboard"]["lengths"])
 
 @app.route('/api/sounds', methods=['GET'])
 @auth.login_required
@@ -264,6 +285,9 @@ def add_sound():
     data = request.json
     name = data.get('name')
     path = data.get('path')
+    duration = ffmpeg.probe(path)['format']['duration']
+    duration = format_sound_length(duration)
+    config.set(f"soundboard/lengths/{name}", duration)
     logger(f"/api/sounds/add {name}@{path}",
            user=request.authorization.username, method="POST")
     if name and path:
