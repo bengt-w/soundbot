@@ -25,7 +25,7 @@ def gen_authcode(username, theme="dark"):
     auth_code = generate_authcode()
     
     if username not in users:
-        users[username] = {"otp": None, "theme": theme}
+        users[username] = {"otp": None, "theme": theme, "joinsound": None}
     
     users[username]["otp"] = auth_code
     
@@ -63,9 +63,31 @@ def set_theme(username, theme):
         users = json.load(f)
     
     if username not in users:
-        users[username] = {"otp": None, "theme": "dark"}
+        otp = random.randint(100_000_000, 999_999_999)
+        users[username] = {"otp": otp, "theme": "dark", "joinsound": None}
     
     users[username]["theme"] = theme
+    
+    with open(USERFILE, 'w') as f:
+        json.dump(users, f, indent=4)
+
+def get_joinsound(username):
+    with open(USERFILE, 'r') as f:
+        users = json.load(f)
+        try:
+            return users[username]["joinsound"]
+        except KeyError:
+            return None
+
+def set_joinsound(username, sound):
+    with open(USERFILE, 'r') as f:
+        users = json.load(f)
+    
+    if username not in users:
+        otp = random.randint(100_000_000, 999_999_999)
+        users[username] = {"otp": otp, "theme": "dark", "joinsound": None}
+    
+    users[username]["joinsound"] = sound
     
     with open(USERFILE, 'w') as f:
         json.dump(users, f, indent=4)

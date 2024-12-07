@@ -107,7 +107,7 @@
       const lengths = await res_l.json();
       const soundboard = document.getElementById("soundboard");
       soundboard.innerHTML = "";
-      
+
       for (const name in sounds) {
         const soundDiv = document.createElement("div");
         soundDiv.classList.add("soundButtonDiv");
@@ -119,8 +119,9 @@
           <button title="Download" class="actionButton" onclick="downloadSound('${name}')">💾</button>
           <button title="Preview" class="actionButton" onclick="previewSound('${name}')">👂</button>
           <button title="Loop" style="opacity: 0.5" class="actionButton loopButton" onclick="loopSound('${name}')">🔁</button>
+          <button title="Set this to your personal Joinsound" class="actionButton" onclick="setJoinSound('${name}')">🚪</button>
           <strong class="soundName">${name}</strong>
-          <label class="length" id="${name}-length">00:00:00</label>
+          <label class="length" id="${name}-length"></label>
               `;
         soundboard.appendChild(soundDiv);
       }
@@ -222,6 +223,13 @@
       });
     }
 
+    async function setJoinSound(name) {
+      await fetch('/api/joinsound', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sound_name: name })
+      });
+    }
     // Leave the voice channel by sending a POST request
     async function leaveChannel() {
       const guildId = document.getElementById("guildId").value || "";

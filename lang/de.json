@@ -51,6 +51,9 @@
         },
         "loop": {
             "success": "Sound $(1) wird in einer Endlosschleife abgespielt."
+        }, 
+        "joinsound": {
+            "success": "Join-Sound erfolgreich geändert zu $(1)."
         }
     }
 }

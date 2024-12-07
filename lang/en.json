@@ -51,6 +51,9 @@
         },
         "loop": {
             "success": "Sound $(1) is being played in a loop."
+        },
+        "joinsound": {
+            "success": "Join sound set to $(1)."
         }
     }
 }

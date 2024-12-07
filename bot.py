@@ -16,7 +16,7 @@ try:
     import random
     from lang_handler import LangHandler
     import config_handler as config
-    from user_handler import validate_authcode, gen_authcode, set_theme, get_theme
+    from user_handler import validate_authcode, gen_authcode, set_theme, get_theme, set_joinsound, get_joinsound
     from log_handler import log as logger
     import time
     import ffmpeg
@@ -127,7 +127,10 @@ def preview_sound():
                 with open("./preview.json", "w") as f:
                     f.write('{}')
             with open("./preview.json", "r") as f:
-                previews = json.load(f)
+                try: 
+                    previews = json.load(f)
+                except json.JSONDecodeError:
+                    previews = {}
             preview_id = str(random.randint(100000, 999999))
             previews[preview_id] = {"name": sound_name, "expire": time.time()+60}
             with open("./preview.json", "w") as f:
@@ -427,6 +430,9 @@ async def join_channel_coroutine(guild_id, channel_id):
                     if not config.get()["developement_mode"]:
                         await play_sound_coroutine(guild_id, "join")
                     print(f"Successfully joined channel {channel_id}")
+                    config.set("soundboard/current_channel_id", str(channel_id))
+                    config.set("soundboard/current_channel_tag", bot.get_guild(int(guild_id)).get_channel(int(channel_id)).name)
+                    config.set("soundboard/current_guild_id", str(guild_id))
                 except Exception as e:
                     print(f"Failed to join channel: {e}")
             else:
@@ -520,13 +526,16 @@ async def leave_channel_coroutine(guild_id):
     if guild and guild.voice_client:
         await guild.voice_client.disconnect()
         print(f"Disconnected from channel in guild {guild_id}")
+        config.set("soundboard/current_channel_id", "")
+        config.set("soundboard/current_channel_tag", "")
+        config.set("soundboard/current_guild_id", "")
     else:
         print(f"No active voice client in guild {guild_id}")
 
 
 @app.route('/api/settings', methods=['POST'])
 @auth.login_required
-def update_settings():
+async def update_settings():
     if not config.get()["demo_mode"]:
         data = request.json
         guild_id = data.get('guild_id')
@@ -553,6 +562,15 @@ def get_settings():
         "guild_id": config.get()["soundboard"]["guild_id"],
         "channel_id": config.get()["soundboard"]["channel_id"]
     })
+    
+@app.route('/api/joinsound', methods=['POST'])
+@auth.login_required
+def join_sound():
+    data = request.json
+    sound_name = data.get("sound_name")
+    logger(f"/api/joinsound '{sound_name}'", user=request.authorization.username, method="POST")
+    set_joinsound(request.authorization.username, sound_name)
+    return jsonify({"message": f"Set joinsound for {request.authorization.username} to '{sound_name}'"}), 200
 
 
 @app.route('/api/sounds/stop', methods=['POST'])
@@ -731,7 +749,28 @@ async def loop_cmd_autocomlete(interaction: discord.Interaction, current: str):
 async def on_voice_state_update(member, before, after):
     if member == bot.user:
         await stop_sound_coroutine(member.guild.id)
+    joinsound = get_joinsound(member.name)
+    if str(after.channel) == config.get()["soundboard"]["current_channel_tag"] and joinsound != None:
+        await stop_sound_coroutine(member.guild.id)
+        await play_sound_coroutine(member.guild.id, joinsound)
 
+@bot.tree.command(name='joinsound', description="Sets your personal joinsound.")
+async def joinsound_cmd(interaction: discord.Interaction, sound_name: str):
+    set_joinsound(member=interaction.user.name, sound_name=sound_name)
+    logger(f"commands.joinsound {sound_name}", user=interaction.user.name, location=interaction.guild.id)
+    await interaction.response.send_message(lang_manager("commands.joinsound.success", sound_name))
+    
+@joinsound_cmd.autocomplete('sound_name')
+async def joinsound_cmd_autocomlete(interaction: discord.Interaction, current: str):
+    sounds = []
+    for sound in config.get()["soundboard"]["sound_files"]:
+        sounds.append(sound)
+
+    filtered = [sound for sound in sounds if current.lower() in sound.lower()]
+    if len(filtered) > 25:
+        return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered[:25]]
+    else:
+        return [discord.app_commands.Choice(name=sound, value=sound) for sound in filtered]
 
 @bot.tree.command(name='play', description="Plays a provided sound.")
 async def play(interaction: discord.Interaction, sound_name: str):
@@ -929,7 +968,6 @@ async def language_cmd_autocomplete(interaction: discord.Interaction, current: s
     filtered = [lang for lang in langs_no_json if current.lower()
                 in lang.lower()]
     return [discord.app_commands.Choice(name=lang, value=lang) for lang in filtered]
-
 
 async def rand_sound(guild_id, sound_group=None):
     choosables = []
