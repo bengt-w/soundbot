@@ -107,16 +107,17 @@
       const lengths = await res_l.json();
       const soundboard = document.getElementById("soundboard");
       soundboard.innerHTML = "";
-
+      
       for (const name in sounds) {
         const soundDiv = document.createElement("div");
         soundDiv.classList.add("soundButtonDiv");
+        soundDiv.id = "soundDiv" + name;
         soundDiv.innerHTML = `
           <button title="Play" class="actionButton" onclick="playSound('${name}')">▶️</button>
           <button title="Delete" class="actionButton" onclick="deleteSound('${name}')">🗑️</button>
           <button title="Rename" class="actionButton" onclick="renameSound('${name}')">🏷️</button>
           <button title="Download" class="actionButton" onclick="downloadSound('${name}')">💾</button>
-          <button title="Preview" class="actionButton" onclick="previewSound('${name}')">👀</button>
+          <button title="Preview" class="actionButton" onclick="previewSound('${name}')">👂</button>
           <button title="Loop" style="opacity: 0.5" class="actionButton loopButton" onclick="loopSound('${name}')">🔁</button>
           <strong class="soundName">${name}</strong>
           <label class="length" id="${name}-length">00:00:00</label>
