@@ -11,6 +11,7 @@ if not os.path.exists(USERFILE):
         f.write("{}")
 
 def get_authcode(username):
+    username = username.lower()
     with open(USERFILE, 'r') as f:
         users = json.load(f)
         try:
@@ -19,6 +20,7 @@ def get_authcode(username):
             raise ValueError("User not found")
 
 def gen_authcode(username, theme="dark"):
+    username = username.lower()
     with open(USERFILE, 'r') as f:
         users = json.load(f)
     
@@ -41,7 +43,7 @@ def validate_authcode(username, auth_code):
     with open(USERFILE, 'r') as f:
         users = json.load(f)
         try:
-            return users[username]["otp"] == auth_code
+            return users[username.lower()]["otp"].lower() == auth_code.lower()
         except KeyError:
             return False
 
@@ -51,6 +53,7 @@ def generate_authcode(length: int = 6):
     return auth_code
 
 async def get_theme(username):
+    username = username.lower()
     with open(USERFILE, 'r') as f:
         users = json.load(f)
         try:
@@ -59,6 +62,7 @@ async def get_theme(username):
             return "dark"
 
 def set_theme(username, theme):
+    username = username.lower()
     with open(USERFILE, 'r') as f:
         users = json.load(f)
     
@@ -72,6 +76,7 @@ def set_theme(username, theme):
         json.dump(users, f, indent=4)
 
 def get_joinsound(username):
+    username = username.lower()
     with open(USERFILE, 'r') as f:
         users = json.load(f)
         try:
@@ -80,6 +85,7 @@ def get_joinsound(username):
             return None
 
 def set_joinsound(username, sound):
+    username = username.lower()
     with open(USERFILE, 'r') as f:
         users = json.load(f)
     
