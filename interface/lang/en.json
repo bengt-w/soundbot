@@ -17,6 +17,7 @@
     "status_disconnected": "Disconnected",
     "status_connected": "Connected", 
     "status_error": "ERROR!",
+    "resetJoinSound": "Reset personal Join Sound",
     "lang": "en",
     "themes": {
         "default": "default",

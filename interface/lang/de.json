@@ -17,6 +17,7 @@
     "status_disconnected": "Getrennt",
     "status_connected": "Verbunden", 
     "status_error": "Fehler!",
+    "resetJoinSound": "Persönlichen Join-Sound zurücksetzen",
     "lang": "de",
     "themes": {
         "default": "Standart",
