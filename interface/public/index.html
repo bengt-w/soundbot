@@ -121,13 +121,9 @@
           <button title="Set this to your personal Joinsound" class="actionButton" onclick="setJoinSound('${name}')">🚪</button>
           <button title="Loop" style="opacity: 0.5" class="actionButton loopButton" onclick="loopSound('${name}')">🔁</button>
           <strong class="soundName">${name}</strong>
-          <label class="length" id="${name}-length"></label>
+          <label class="length" id="${name}-length">${lengths[name]}</label>
               `;
         soundboard.appendChild(soundDiv);
-      }
-      for (const len in lengths) {
-        const length = document.getElementById(`${len}-length`);
-        length.innerHTML = lengths[len];
       }
     }
 

@@ -326,8 +326,12 @@ def rename_sound():
            user=request.authorization.username, method="POST")
     if old_name in config.get()["soundboard"]["sound_files"] and new_name not in config.get()["soundboard"]["sound_files"]:
         config.set(f"soundboard/sound_files/{new_name}",
-                   config.get()["soundboard"]["sound_files"][old_name])
+                    config.get()["soundboard"]["sound_files"][old_name])
         config.remove(f"soundboard/sound_files/{old_name}")
+        if old_name in config.get()["soundboard"]["lengths"] and new_name not in config.get()["soundboard"]["lengths"]:
+            config.set(f"soundboard/lengths/{new_name}",
+                        config.get()["soundboard"]["lengths"][old_name])
+            config.remove(f"soundboard/lengths/{old_name}")
         return jsonify({"message": "Sound renamed."})
     return jsonify({"message": "Invalid input or name already exists."}), 400
 
