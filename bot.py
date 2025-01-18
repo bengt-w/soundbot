@@ -8,7 +8,7 @@ try:
     from discord import app_commands
     from flask import Flask, request, jsonify, render_template, request, send_file
     import asyncio
-    import threading
+    import multiprocessing
     from werkzeug.security import generate_password_hash, check_password_hash
     from getpass import getpass
     from flask_httpauth import HTTPBasicAuth
@@ -57,20 +57,20 @@ async def change_user(pfp_location, name):
     print("User profile changed!")
 
 
-def add_sounds_from_directory():    
+def add_sounds_from_directory():
     tmp = config.get()
     sounds_directory = str(tmp["soundboard"]["sounds_dir"])
-    
+
     len_cfg = tmp
     for sound in len_cfg["soundboard"]["sound_files"]:
         sound_path = len_cfg["soundboard"]["sound_files"][sound]
         duration = ffmpeg.probe(sound_path)['format']['duration']
         duration_string = format_sound_length(duration)
         len_cfg["soundboard"]["lengths"][sound] = duration_string
-            
+
     with open("config/config.json", "w") as f:
         json.dump(len_cfg, f, indent=4)
-            
+
     for filename in os.listdir(sounds_directory):
         if filename.endswith('.mp3'):
             sound_name = os.path.splitext(filename)[0]
@@ -996,13 +996,20 @@ def run_flask_app():
 if __name__ == '__main__':
     gen_authcode("watchdog")
     LOG_FILE = os.path.join(
-        "logs", f"log-{datetime.now().strftime("%m-%d-%Y_%H:%M:%S")}.txt")
+        "logs", f"log-{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}.txt")
     LATEST_LOG_FILE = os.path.join("logs", "latest.txt")
     watchdog_process = subprocess.Popen(['python3', 'watchdog_script.py'])
 
     try:
-        threading.Thread(target=run_flask_app).start()
-        bot.run(config.get()["discord_token"])
+        flask_thread = multiprocessing.Process(target=run_flask_app)
+        flask_thread.start()
+        try:
+            bot.run(config.get()["discord_token"])
+        except discord.errors.LoginFailure:
+            print("Please setup a valid token in the config file")
+            watchdog_process.terminate()
+            flask_thread.terminate()
+            exit(0)
     finally:
         open(LOG_FILE, 'a').close()
         os.rename(LATEST_LOG_FILE, LOG_FILE)

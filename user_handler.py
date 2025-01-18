@@ -23,27 +23,27 @@ def gen_authcode(username, theme="dark"):
     username = username.lower()
     with open(USERFILE, 'r') as f:
         users = json.load(f)
-    
+
     auth_code = generate_authcode()
-    
+
     if username not in users:
         users[username] = {"otp": None, "theme": theme, "joinsound": None}
-    
+
     users[username]["otp"] = auth_code
-    
+
     with open(USERFILE, 'w') as f:
         json.dump(users, f, indent=4)
-    
+
     return auth_code
 
 def validate_authcode(username, auth_code):
     if (config.get()["demo_mode"] or config.get()["developement_mode"]) and username:
         return True
-    
+
     with open(USERFILE, 'r') as f:
         users = json.load(f)
         try:
-            return users[username.lower()]["otp"].lower() == auth_code.lower()
+            return str(users[username.lower()]["otp"]).lower() == auth_code.lower()
         except KeyError:
             return False
 
@@ -65,13 +65,13 @@ def set_theme(username, theme):
     username = username.lower()
     with open(USERFILE, 'r') as f:
         users = json.load(f)
-    
+
     if username not in users:
         otp = random.randint(100_000_000, 999_999_999)
         users[username] = {"otp": otp, "theme": "dark", "joinsound": None}
-    
+
     users[username]["theme"] = theme
-    
+
     with open(USERFILE, 'w') as f:
         json.dump(users, f, indent=4)
 
